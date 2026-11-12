@@ -18,6 +18,42 @@ export const TIMELINE_STEPS: readonly TimelineStep[] = [
   "Completed",
 ] as const;
 
+export const YORUBA_LABELS: Record<TimelineStep, string> = {
+  Started: "Ti bẹ̀rẹ̀",
+  "Waiting for your payment": "Ń dúró de ìsanwó rẹ",
+  "Payment received": "A ti gba ìsanwó",
+  "Anchor processing": "Olùgbékalẹ̀ ń ṣiṣẹ́ lórí rẹ̀",
+  "Sending on Stellar": "Ń fi ránṣẹ́ lórí Stellar",
+  Completed: "Ti parí",
+};
+
+export const HAUSA_LABELS: Record<TimelineStep, string> = {
+  Started: "An fara",
+  "Waiting for your payment": "Ana jiran biyanku",
+  "Payment received": "An karɓi biya",
+  "Anchor processing": "Anchor yana sarrafawa",
+  "Sending on Stellar": "Ana aikawa a kan Stellar",
+  Completed: "An kammala",
+};
+
+export const IGBO_LABELS: Record<TimelineStep, string> = {
+  Started: "Ebidoela",
+  "Waiting for your payment": "Na-echere ụgwọ gị",
+  "Payment received": "Anatala ụgwọ",
+  "Anchor processing": "Anchor na-ahazi ya",
+  "Sending on Stellar": "Na-ezipụ na Stellar",
+  Completed: "Emezuru",
+};
+
+export const PIDGIN_LABELS: Record<TimelineStep, string> = {
+  Started: "Don start",
+  "Waiting for your payment": "We dey wait for your payment",
+  "Payment received": "We don see your payment",
+  "Anchor processing": "Anchor dey process am",
+  "Sending on Stellar": "Dey send am for Stellar",
+  Completed: "Don complete",
+};
+
 export interface StepStatusMapping {
   kind: "step";
   stepIndex: number;

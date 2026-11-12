@@ -16,7 +16,7 @@ Exported from `@nairaramp/react`:
 - Supporting TypeScript types and constants:
   - `UsePayWithNairaOptions`, `UsePayWithNairaResult`, `PayWithNairaPhase`
   - `PayWithNairaProps`
-  - `StatusTimelineProps`, `TimelineStep`, `StatusMapping`, `StepStatusMapping`, `FailureStatusMapping`, `TIMELINE_STEPS`, `STATUS_MAP`
+  - `StatusTimelineProps`, `TimelineStep`, `StatusMapping`, `StepStatusMapping`, `FailureStatusMapping`, `TIMELINE_STEPS`, `STATUS_MAP`, `YORUBA_LABELS`, `HAUSA_LABELS`, `IGBO_LABELS`, `PIDGIN_LABELS`
 
 ---
 
@@ -298,5 +298,45 @@ function PaymentStatus({ status }: { status: TransactionStatus }) {
       }}
     />
   );
+}
+```
+
+### Nigerian Language Label Sets (`YORUBA_LABELS`, `HAUSA_LABELS`, `IGBO_LABELS`, `PIDGIN_LABELS`)
+
+`@nairaramp/react` exports pre-translated `Record<TimelineStep, string>` label dictionaries for Nigeria's most widely spoken languages:
+
+- `YORUBA_LABELS` (Yorùbá)
+- `HAUSA_LABELS` (Hausa)
+- `IGBO_LABELS` (Igbo)
+- `PIDGIN_LABELS` (Nigerian Pidgin)
+
+```tsx
+import {
+  StatusTimeline,
+  YORUBA_LABELS,
+  HAUSA_LABELS,
+  IGBO_LABELS,
+  PIDGIN_LABELS,
+} from "@nairaramp/react";
+import type { TransactionStatus } from "@nairaramp/core";
+
+type SupportedLocale = "en" | "yo" | "ha" | "ig" | "pcm";
+
+const LOCALE_LABELS = {
+  en: undefined,
+  yo: YORUBA_LABELS,
+  ha: HAUSA_LABELS,
+  ig: IGBO_LABELS,
+  pcm: PIDGIN_LABELS,
+} as const;
+
+function LocalizedPaymentStatus({
+  status,
+  locale = "pcm",
+}: {
+  status: TransactionStatus;
+  locale?: SupportedLocale;
+}) {
+  return <StatusTimeline status={status} labels={LOCALE_LABELS[locale]} />;
 }
 ```

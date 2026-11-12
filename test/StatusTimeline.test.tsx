@@ -1,9 +1,14 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import * as rootExports from "../src";
 import {
   StatusTimeline,
   STATUS_MAP,
   TIMELINE_STEPS,
+  YORUBA_LABELS,
+  HAUSA_LABELS,
+  IGBO_LABELS,
+  PIDGIN_LABELS,
   type TimelineStep,
 } from "../src/StatusTimeline";
 import type { TransactionStatus } from "@nairaramp/core";
@@ -165,5 +170,44 @@ describe("StatusTimeline Component", () => {
       "Sending on Stellar",
       "Completed",
     ]);
+  });
+
+  it("exports Nigerian language label sets (Yoruba, Hausa, Igbo, Pidgin) covering all 6 timeline steps", () => {
+    expect(rootExports.YORUBA_LABELS).toBe(YORUBA_LABELS);
+    expect(rootExports.HAUSA_LABELS).toBe(HAUSA_LABELS);
+    expect(rootExports.IGBO_LABELS).toBe(IGBO_LABELS);
+    expect(rootExports.PIDGIN_LABELS).toBe(PIDGIN_LABELS);
+
+    const labelSets: Array<[string, Record<TimelineStep, string>]> = [
+      ["YORUBA_LABELS", YORUBA_LABELS],
+      ["HAUSA_LABELS", HAUSA_LABELS],
+      ["IGBO_LABELS", IGBO_LABELS],
+      ["PIDGIN_LABELS", PIDGIN_LABELS],
+    ];
+
+    for (const [, dictionary] of labelSets) {
+      expect(Object.keys(dictionary)).toHaveLength(TIMELINE_STEPS.length);
+
+      for (const step of TIMELINE_STEPS) {
+        expect(typeof dictionary[step]).toBe("string");
+        expect(dictionary[step].trim().length).toBeGreaterThan(0);
+      }
+
+      const { unmount } = render(
+        <StatusTimeline status="pending_anchor" labels={dictionary} />
+      );
+
+      for (const step of TIMELINE_STEPS) {
+        expect(screen.getByText(dictionary[step])).toBeTruthy();
+      }
+
+      const activeItem = screen
+        .getByText(dictionary["Anchor processing"])
+        .closest("li");
+      expect(activeItem?.getAttribute("aria-current")).toBe("step");
+
+      unmount();
+      cleanup();
+    }
   });
 });

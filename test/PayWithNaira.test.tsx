@@ -337,6 +337,25 @@ describe("PayWithNaira Component", () => {
     expect(mockPopup.close).toHaveBeenCalledTimes(1);
   });
 
+  it("applies custom className and style overrides to the root container", () => {
+    const { ramp } = createFakeRamp();
+
+    const { container } = render(
+      <PayWithNaira
+        ramp={ramp}
+        assetCode="USDC"
+        className="custom-pay-wrapper"
+        style={{ marginTop: "16px", maxWidth: "500px" }}
+      />
+    );
+
+    const rootDiv = container.firstChild as HTMLElement;
+    expect(rootDiv.className).toBe("custom-pay-wrapper");
+    expect(rootDiv.style.marginTop).toBe("16px");
+    expect(rootDiv.style.maxWidth).toBe("500px");
+    expect(rootDiv.style.width).toBe("100%");
+  });
+
   it("rejects non-HTTP(S) anchor URLs without navigating popup or rendering fallback link", async () => {
     vi.spyOn(window, "open").mockReturnValue(null);
     const { ramp } = createFakeRamp({

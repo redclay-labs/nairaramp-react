@@ -20,6 +20,8 @@ export interface PayWithNairaProps {
   onComplete?: () => void;
   onError?: (error: NairaRampError) => void;
   label?: string;
+  className?: string;
+  style?: CSSProperties;
 }
 
 const containerStyle: CSSProperties = {
@@ -113,6 +115,8 @@ export function PayWithNaira({
   onComplete,
   onError,
   label = "Pay with Naira",
+  className,
+  style,
 }: PayWithNairaProps): ReactElement {
   const { start, phase, error, url, reset } = usePayWithNaira({
     ramp,
@@ -201,7 +205,7 @@ export function PayWithNaira({
   }, [phase, error, closePopup]);
 
   return (
-    <div style={containerStyle}>
+    <div className={className} style={{ ...containerStyle, ...style }}>
       {phase === "idle" && (
         <button
           type="button"

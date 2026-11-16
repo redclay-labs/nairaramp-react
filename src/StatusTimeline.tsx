@@ -107,6 +107,8 @@ export interface StatusTimelineProps {
   status: TransactionStatus | string | undefined;
   message?: string;
   labels?: Partial<Record<TimelineStep, string>>;
+  className?: string;
+  style?: CSSProperties;
 }
 
 const containerStyle: CSSProperties = {
@@ -174,12 +176,18 @@ export function StatusTimeline({
   status,
   message,
   labels,
+  className,
+  style,
 }: StatusTimelineProps): ReactElement {
   const mapping = resolveStatusMapping(status);
 
   if (mapping.kind === "failure") {
     return (
-      <div style={failureContainerStyle} role="alert">
+      <div
+        className={className}
+        style={{ ...failureContainerStyle, ...style }}
+        role="alert"
+      >
         <p style={failureTitleStyle}>{mapping.label}</p>
         {message && <p style={messageTextStyle}>{message}</p>}
       </div>
@@ -189,7 +197,7 @@ export function StatusTimeline({
   const activeIndex = mapping.stepIndex;
 
   return (
-    <div style={containerStyle}>
+    <div className={className} style={{ ...containerStyle, ...style }}>
       <ol style={listStyle} aria-label="Payment status timeline">
         {TIMELINE_STEPS.map((step, index) => {
           const isDone = index < activeIndex;

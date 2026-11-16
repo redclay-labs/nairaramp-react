@@ -156,6 +156,21 @@ describe("StatusTimeline Component", () => {
     expect(screen.getByText("Sending on Stellar")).toBeTruthy();
   });
 
+  it("renders safe fallback alert for unknown runtime status strings", () => {
+    const { rerender } = render(
+      <StatusTimeline status="custom_anchor_hold" message="Manual review" />
+    );
+
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.getByText("Unknown status")).toBeTruthy();
+    expect(screen.getByText("Manual review")).toBeTruthy();
+
+    // Prototype property names should also fall back safely
+    rerender(<StatusTimeline status="toString" />);
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.getByText("Unknown status")).toBeTruthy();
+  });
+
   it("exports all 6 timeline steps in correct order", () => {
     expect(TIMELINE_STEPS).toEqual([
       "Started",

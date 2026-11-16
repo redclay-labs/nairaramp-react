@@ -22,6 +22,8 @@ export interface PayWithNairaProps {
   onError?: (error: NairaRampError) => void;
   label?: string;
   theme?: ThemeMode;
+  className?: string;
+  style?: CSSProperties;
 }
 
 const containerStyle: CSSProperties = {
@@ -116,6 +118,8 @@ export function PayWithNaira({
   onError,
   label = "Pay with Naira",
   theme = "system",
+  className,
+  style,
 }: PayWithNairaProps): ReactElement {
   const tokens = useResolvedTheme(theme);
   const { start, phase, error, url, reset } = usePayWithNaira({
@@ -205,7 +209,7 @@ export function PayWithNaira({
   }, [phase, error, closePopup]);
 
   return (
-    <div style={{ ...containerStyle, color: tokens.text }}>
+    <div className={className} style={{ ...containerStyle, color: tokens.text, ...style }}>
       {phase === "idle" && (
         <button
           type="button"

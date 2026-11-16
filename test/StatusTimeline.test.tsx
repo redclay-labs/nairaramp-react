@@ -173,6 +173,34 @@ describe("StatusTimeline Component", () => {
     expect(lightAlert.style.backgroundColor).toBe("rgb(254, 242, 242)");
   });
 
+  it("applies custom className and style overrides in both step and failure views", () => {
+    const { container, rerender } = render(
+      <StatusTimeline
+        status="pending_anchor"
+        className="timeline-box"
+        style={{ marginBottom: "20px", maxWidth: "600px" }}
+      />
+    );
+
+    const stepRoot = container.firstChild as HTMLElement;
+    expect(stepRoot.className).toBe("timeline-box");
+    expect(stepRoot.style.marginBottom).toBe("20px");
+    expect(stepRoot.style.maxWidth).toBe("600px");
+    expect(stepRoot.style.width).toBe("100%");
+
+    rerender(
+      <StatusTimeline
+        status="error"
+        className="timeline-failure-box"
+        style={{ marginBottom: "24px" }}
+      />
+    );
+
+    const failureRoot = container.firstChild as HTMLElement;
+    expect(failureRoot.className).toBe("timeline-failure-box");
+    expect(failureRoot.style.marginBottom).toBe("24px");
+  });
+
   it("renders safe fallback alert for unknown runtime status strings", () => {
     const { rerender } = render(
       <StatusTimeline status="custom_anchor_hold" message="Manual review" />

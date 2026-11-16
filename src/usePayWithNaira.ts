@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   type Ramp,
   type TransactionStatus,
+  type AnchorTransaction,
   TERMINAL_STATUSES,
   NairaRampError,
   isNairaRampError,
@@ -117,16 +118,25 @@ export function usePayWithNaira({
       stopWatcher();
 
       const subscription = ramp.watch(id, {
-        onStatus: (nextStatus: TransactionStatus | string) => {
+        onStatus: (
+          nextStatus: TransactionStatus | string,
+          transaction?: AnchorTransaction
+        ) => {
           if (!isMountedRef.current) return;
           setStatus(nextStatus);
 
           if (nextStatus === "completed") {
+            stopWatcher();
             phaseRef.current = "completed";
             setPhase("completed");
           } else if (
             (TERMINAL_STATUSES as readonly string[]).includes(nextStatus)
           ) {
+            stopWatcher();
+            const detail = transaction?.message
+              ? `Transaction ${nextStatus}: ${transaction.message}`
+              : `Transaction ${nextStatus}`;
+            setError(new NairaRampError("TRANSACTION_FAILED", detail));
             phaseRef.current = "failed";
             setPhase("failed");
           } else if (
@@ -142,12 +152,14 @@ export function usePayWithNaira({
         },
         onComplete: () => {
           if (!isMountedRef.current) return;
+          stopWatcher();
           setStatus("completed");
           phaseRef.current = "completed";
           setPhase("completed");
         },
         onError: (err: NairaRampError) => {
           if (!isMountedRef.current) return;
+          stopWatcher();
           const wrapped = ensureNairaRampError(err);
           setError(wrapped);
           phaseRef.current = "failed";

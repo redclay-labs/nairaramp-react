@@ -12,6 +12,7 @@ import {
   NairaRampError as NairaRampErrorClass,
 } from "@nairaramp/core";
 import { usePayWithNaira } from "./usePayWithNaira";
+import { useResolvedTheme, type ThemeMode } from "./theme";
 
 export interface PayWithNairaProps {
   ramp: Ramp;
@@ -20,6 +21,7 @@ export interface PayWithNairaProps {
   onComplete?: () => void;
   onError?: (error: NairaRampError) => void;
   label?: string;
+  theme?: ThemeMode;
 }
 
 const containerStyle: CSSProperties = {
@@ -104,7 +106,9 @@ export function PayWithNaira({
   onComplete,
   onError,
   label = "Pay with Naira",
+  theme = "system",
 }: PayWithNairaProps): ReactElement {
+  const tokens = useResolvedTheme(theme);
   const { start, phase, error, url, reset } = usePayWithNaira({
     ramp,
     assetCode,
@@ -196,7 +200,7 @@ export function PayWithNaira({
   }, [phase, error, closePopup]);
 
   return (
-    <div style={containerStyle}>
+    <div style={{ ...containerStyle, color: tokens.text }}>
       {phase === "idle" && (
         <button
           type="button"
@@ -205,8 +209,10 @@ export function PayWithNaira({
           onBlur={() => setIsPrimaryFocused(false)}
           style={{
             ...primaryButtonStyle,
+            color: tokens.primaryBtnText,
+            backgroundColor: tokens.primaryBtnBg,
             outline: isPrimaryFocused
-              ? "3px solid #047857"
+              ? `3px solid ${tokens.focusPrimary}`
               : "2px solid transparent",
             outlineOffset: "2px",
           }}
@@ -220,7 +226,11 @@ export function PayWithNaira({
           <button
             type="button"
             disabled
-            style={disabledButtonStyle}
+            style={{
+              ...disabledButtonStyle,
+              color: tokens.disabledBtnText,
+              backgroundColor: tokens.disabledBtnBg,
+            }}
           >
             Connecting...
           </button>
@@ -228,7 +238,7 @@ export function PayWithNaira({
 
         {phase === "awaiting_user" && (
           <div>
-            <p style={statusTextStyle}>
+            <p style={{ ...statusTextStyle, color: tokens.secondaryText }}>
               Complete the steps in the anchor window
             </p>
             {popupBlocked && url && (
@@ -241,8 +251,9 @@ export function PayWithNaira({
                   onBlur={() => setIsLinkFocused(false)}
                   style={{
                     ...linkStyle,
+                    color: tokens.linkText,
                     outline: isLinkFocused
-                      ? "2px solid #2563eb"
+                      ? `2px solid ${tokens.focusAccent}`
                       : "2px solid transparent",
                     outlineOffset: "2px",
                   }}
@@ -255,16 +266,22 @@ export function PayWithNaira({
         )}
 
         {phase === "processing" && (
-          <p style={statusTextStyle}>Processing your payment</p>
+          <p style={{ ...statusTextStyle, color: tokens.secondaryText }}>
+            Processing your payment
+          </p>
         )}
 
         {phase === "completed" && (
-          <p style={statusTextStyle}>Payment completed</p>
+          <p style={{ ...statusTextStyle, color: tokens.secondaryText }}>
+            Payment completed
+          </p>
         )}
 
         {phase === "failed" && (
           <div>
-            <p style={errorTextStyle}>{error?.message ?? "Payment failed"}</p>
+            <p style={{ ...errorTextStyle, color: tokens.errorText }}>
+              {error?.message ?? "Payment failed"}
+            </p>
             <button
               type="button"
               onClick={handleRetry}
@@ -272,8 +289,11 @@ export function PayWithNaira({
               onBlur={() => setIsRetryFocused(false)}
               style={{
                 ...retryButtonStyle,
+                color: tokens.retryBtnText,
+                backgroundColor: tokens.retryBtnBg,
+                border: `1px solid ${tokens.retryBtnBorder}`,
                 outline: isRetryFocused
-                  ? "2px solid #2563eb"
+                  ? `2px solid ${tokens.focusAccent}`
                   : "2px solid transparent",
                 outlineOffset: "2px",
               }}

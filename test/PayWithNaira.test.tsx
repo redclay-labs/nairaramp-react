@@ -337,6 +337,44 @@ describe("PayWithNaira Component", () => {
     expect(mockPopup.close).toHaveBeenCalledTimes(1);
   });
 
+  it("supports light, dark, and reactive system themes", () => {
+    const { ramp } = createFakeRamp();
+
+    const listeners: Array<(e: MediaQueryListEvent) => void> = [];
+    const matchMediaMock = vi.fn().mockImplementation(() => ({
+      matches: false,
+      media: "(prefers-color-scheme: dark)",
+      addEventListener: (_event: string, cb: (e: MediaQueryListEvent) => void) => {
+        listeners.push(cb);
+      },
+      removeEventListener: (_event: string, cb: (e: MediaQueryListEvent) => void) => {
+        const idx = listeners.indexOf(cb);
+        if (idx >= 0) listeners.splice(idx, 1);
+      },
+    }));
+    vi.stubGlobal("matchMedia", matchMediaMock);
+
+    const { container, rerender } = render(
+      <PayWithNaira ramp={ramp} assetCode="USDC" theme="light" />
+    );
+    expect((container.firstChild as HTMLElement).style.color).toBe("rgb(17, 24, 39)");
+
+    rerender(<PayWithNaira ramp={ramp} assetCode="USDC" theme="dark" />);
+    expect((container.firstChild as HTMLElement).style.color).toBe("rgb(249, 250, 251)");
+
+    rerender(<PayWithNaira ramp={ramp} assetCode="USDC" theme="system" />);
+    expect((container.firstChild as HTMLElement).style.color).toBe("rgb(17, 24, 39)");
+
+    act(() => {
+      for (const listener of listeners) {
+        listener({ matches: true } as MediaQueryListEvent);
+      }
+    });
+    expect((container.firstChild as HTMLElement).style.color).toBe("rgb(249, 250, 251)");
+
+    vi.unstubAllGlobals();
+  });
+
   it("has status text inside an aria-live region and adheres to 100% width and 420px max-width", () => {
     const { ramp } = createFakeRamp();
 

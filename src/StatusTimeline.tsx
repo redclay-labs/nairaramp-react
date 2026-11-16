@@ -1,5 +1,6 @@
 import type { ReactElement, CSSProperties } from "react";
 import type { TransactionStatus } from "@nairaramp/core";
+import { useResolvedTheme, type ThemeMode } from "./theme";
 
 export type TimelineStep =
   | "Started"
@@ -107,6 +108,7 @@ export interface StatusTimelineProps {
   status: TransactionStatus | undefined;
   message?: string;
   labels?: Partial<Record<TimelineStep, string>>;
+  theme?: ThemeMode;
 }
 
 const containerStyle: CSSProperties = {
@@ -155,7 +157,9 @@ export function StatusTimeline({
   status,
   message,
   labels,
+  theme = "system",
 }: StatusTimelineProps): ReactElement {
+  const tokens = useResolvedTheme(theme);
   const mapping: StatusMapping =
     status !== undefined
       ? STATUS_MAP[status]
@@ -167,9 +171,23 @@ export function StatusTimeline({
 
   if (mapping.kind === "failure") {
     return (
-      <div style={failureContainerStyle} role="alert">
-        <p style={failureTitleStyle}>{mapping.label}</p>
-        {message && <p style={messageTextStyle}>{message}</p>}
+      <div
+        style={{
+          ...failureContainerStyle,
+          color: tokens.text,
+          backgroundColor: tokens.failureBg,
+          border: `1px solid ${tokens.failureBorder}`,
+        }}
+        role="alert"
+      >
+        <p style={{ ...failureTitleStyle, color: tokens.failureTitle }}>
+          {mapping.label}
+        </p>
+        {message && (
+          <p style={{ ...messageTextStyle, color: tokens.mutedText }}>
+            {message}
+          </p>
+        )}
       </div>
     );
   }
@@ -177,7 +195,7 @@ export function StatusTimeline({
   const activeIndex = mapping.stepIndex;
 
   return (
-    <div style={containerStyle}>
+    <div style={{ ...containerStyle, color: tokens.text }}>
       <ol style={listStyle} aria-label="Payment status timeline">
         {TIMELINE_STEPS.map((step, index) => {
           const isDone = index < activeIndex;
@@ -190,10 +208,10 @@ export function StatusTimeline({
             alignItems: "center",
             gap: "12px",
             color: isActive
-              ? "#111827"
+              ? tokens.text
               : isDone
-              ? "#059669"
-              : "#9ca3af",
+              ? tokens.doneText
+              : tokens.pendingText,
             fontWeight: isActive ? 600 : isDone ? 500 : 400,
           };
 
@@ -208,11 +226,14 @@ export function StatusTimeline({
             fontWeight: 700,
             boxSizing: "border-box",
             backgroundColor: isActive
-              ? "#2563eb"
+              ? tokens.activeBadgeBg
               : isDone
-              ? "#059669"
-              : "#e5e7eb",
-            color: isActive || isDone ? "#ffffff" : "#6b7280",
+              ? tokens.doneBadgeBg
+              : tokens.pendingBadgeBg,
+            color:
+              isActive || isDone
+                ? tokens.activeOrDoneBadgeText
+                : tokens.pendingBadgeText,
           };
 
           return (
@@ -229,7 +250,11 @@ export function StatusTimeline({
           );
         })}
       </ol>
-      {message && <p style={messageTextStyle}>{message}</p>}
+      {message && (
+        <p style={{ ...messageTextStyle, color: tokens.mutedText }}>
+          {message}
+        </p>
+      )}
     </div>
   );
 }

@@ -105,7 +105,7 @@ export const STATUS_MAP: Record<TransactionStatus, StatusMapping> = {
 };
 
 export interface StatusTimelineProps {
-  status: TransactionStatus | undefined;
+  status: TransactionStatus | string | undefined;
   message?: string;
   labels?: Partial<Record<TimelineStep, string>>;
   theme?: ThemeMode;
@@ -153,6 +153,25 @@ const messageTextStyle: CSSProperties = {
   color: "#4b5563",
 };
 
+function resolveStatusMapping(
+  status: TransactionStatus | string | undefined
+): StatusMapping {
+  if (status === undefined) {
+    return {
+      kind: "step",
+      stepIndex: 0,
+      label: "Started",
+    };
+  }
+  if (Object.prototype.hasOwnProperty.call(STATUS_MAP, status)) {
+    return STATUS_MAP[status as TransactionStatus];
+  }
+  return {
+    kind: "failure",
+    label: "Unknown status",
+  };
+}
+
 export function StatusTimeline({
   status,
   message,
@@ -160,14 +179,7 @@ export function StatusTimeline({
   theme = "system",
 }: StatusTimelineProps): ReactElement {
   const tokens = useResolvedTheme(theme);
-  const mapping: StatusMapping =
-    status !== undefined
-      ? STATUS_MAP[status]
-      : {
-          kind: "step",
-          stepIndex: 0,
-          label: "Started",
-        };
+  const mapping = resolveStatusMapping(status);
 
   if (mapping.kind === "failure") {
     return (

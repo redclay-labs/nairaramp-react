@@ -29,3 +29,8 @@ export {
   TIMELINE_STEPS,
   STATUS_MAP,
 } from "./StatusTimeline";
+export {
+  useRampQuote,
+  type UseRampQuoteOptions,
+  type UseRampQuoteResult,
+} from "./useRampQuote";

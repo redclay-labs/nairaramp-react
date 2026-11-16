@@ -156,6 +156,34 @@ describe("StatusTimeline Component", () => {
     expect(screen.getByText("Sending on Stellar")).toBeTruthy();
   });
 
+  it("applies custom className and style overrides in both step and failure views", () => {
+    const { container, rerender } = render(
+      <StatusTimeline
+        status="pending_anchor"
+        className="timeline-box"
+        style={{ marginBottom: "20px", maxWidth: "600px" }}
+      />
+    );
+
+    const stepRoot = container.firstChild as HTMLElement;
+    expect(stepRoot.className).toBe("timeline-box");
+    expect(stepRoot.style.marginBottom).toBe("20px");
+    expect(stepRoot.style.maxWidth).toBe("600px");
+    expect(stepRoot.style.width).toBe("100%");
+
+    rerender(
+      <StatusTimeline
+        status="error"
+        className="timeline-failure-box"
+        style={{ marginBottom: "24px" }}
+      />
+    );
+
+    const failureRoot = container.firstChild as HTMLElement;
+    expect(failureRoot.className).toBe("timeline-failure-box");
+    expect(failureRoot.style.marginBottom).toBe("24px");
+  });
+
   it("exports all 6 timeline steps in correct order", () => {
     expect(TIMELINE_STEPS).toEqual([
       "Started",

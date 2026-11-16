@@ -1,4 +1,5 @@
 export const VERSION = "0.1.0";
+export type { ThemeMode } from "./theme";
 export {
   usePayWithNaira,
   type UsePayWithNairaOptions,

@@ -356,6 +356,42 @@ describe("PayWithNaira Component", () => {
     expect(rootDiv.style.width).toBe("100%");
   });
 
+  it("rejects non-HTTP(S) anchor URLs without navigating popup or rendering fallback link", async () => {
+    vi.spyOn(window, "open").mockReturnValue(null);
+    const { ramp } = createFakeRamp({
+      depositImpl: vi.fn().mockResolvedValue({
+        id: "tx-unsafe",
+        url: "javascript:alert(1)",
+      }),
+    });
+
+    render(<PayWithNaira ramp={ramp} assetCode="USDC" />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Pay with Naira" }));
+    });
+
+    expect(screen.queryByRole("link", { name: "Continue to the anchor" })).toBeNull();
+  });
+
+  it("closes popup when anchor returns a non-HTTP(S) or invalid URL", async () => {
+    const { ramp } = createFakeRamp({
+      depositImpl: vi.fn().mockResolvedValue({
+        id: "tx-bad-url",
+        url: "not-a-valid-url",
+      }),
+    });
+
+    render(<PayWithNaira ramp={ramp} assetCode="USDC" />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Pay with Naira" }));
+    });
+
+    expect(mockPopup.location.href).toBe("");
+    expect(mockPopup.close).toHaveBeenCalledTimes(1);
+  });
+
   it("has status text inside an aria-live region and adheres to 100% width and 420px max-width", () => {
     const { ramp } = createFakeRamp();
 

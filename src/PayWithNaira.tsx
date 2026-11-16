@@ -99,6 +99,15 @@ const linkStyle: CSSProperties = {
   cursor: "pointer",
 };
 
+function isSafeHttpUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 export function PayWithNaira({
   ramp,
   assetCode,
@@ -157,16 +166,12 @@ export function PayWithNaira({
       setPopupBlocked(true);
     }
 
-    try {
-      const result = await start(amount);
-      if (result?.url) {
-        if (popup && !popup.closed) {
-          popup.location.href = result.url;
-        }
-      } else {
-        closePopup();
+    const result = await start(amount);
+    if (result?.url && isSafeHttpUrl(result.url)) {
+      if (popup && !popup.closed) {
+        popup.location.href = result.url;
       }
-    } catch {
+    } else {
       closePopup();
     }
   }, [start, amount, closePopup]);
@@ -235,7 +240,7 @@ export function PayWithNaira({
             <p style={statusTextStyle}>
               Complete the steps in the anchor window
             </p>
-            {popupBlocked && url && (
+            {popupBlocked && url && isSafeHttpUrl(url) && (
               <p style={{ margin: "8px 0 0 0" }}>
                 <a
                   href={url}

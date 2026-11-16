@@ -160,7 +160,7 @@ describe("usePayWithNaira", () => {
     ] as const;
 
     for (const termStatus of terminalStatuses) {
-      const { ramp, getHandlers } = createFakeRamp();
+      const { ramp, getHandlers, stopFn } = createFakeRamp();
       const { result } = renderHook(() =>
         usePayWithNaira({ ramp, assetCode: "NGNC" })
       );
@@ -175,7 +175,34 @@ describe("usePayWithNaira", () => {
 
       expect(result.current.phase).toBe("failed");
       expect(result.current.status).toBe(termStatus);
+      expect(result.current.error).toBeInstanceOf(NairaRampError);
+      expect(result.current.error?.code).toBe("TRANSACTION_FAILED");
+      expect(result.current.error?.message).toBe(`Transaction ${termStatus}`);
+      expect(stopFn).toHaveBeenCalledTimes(1);
     }
+  });
+
+  it("includes anchor message in error on terminal failure status when present", async () => {
+    const { ramp, getHandlers, stopFn } = createFakeRamp();
+    const { result } = renderHook(() =>
+      usePayWithNaira({ ramp, assetCode: "NGNC" })
+    );
+
+    await act(async () => {
+      await result.current.start();
+    });
+
+    act(() => {
+      getHandlers()!.onStatus!("expired", {
+        ...mockTransaction,
+        message: "Deposit window closed",
+      });
+    });
+
+    expect(result.current.phase).toBe("failed");
+    expect(result.current.error).toBeInstanceOf(NairaRampError);
+    expect(result.current.error?.message).toBe("Transaction expired: Deposit window closed");
+    expect(stopFn).toHaveBeenCalledTimes(1);
   });
 
   it("transitions to completed on watcher onComplete", async () => {

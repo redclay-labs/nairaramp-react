@@ -359,4 +359,34 @@ describe("usePayWithNaira", () => {
       handlers.onError!(new NairaRampError("TRANSACTION_FAILED", "late error"));
     });
   });
+
+  it("ignores deposit resolution if unmounted while deposit is pending", async () => {
+    let resolveDeposit!: (val: { id: string; url: string }) => void;
+    const depositPromise = new Promise<{ id: string; url: string }>((resolve) => {
+      resolveDeposit = resolve;
+    });
+
+    const { ramp } = createFakeRamp({
+      depositImpl: vi.fn().mockReturnValue(depositPromise),
+    });
+
+    const { result, unmount } = renderHook(() =>
+      usePayWithNaira({ ramp, assetCode: "NGNC" })
+    );
+
+    let startPromise: Promise<{ id: string; url: string } | undefined>;
+    act(() => {
+      startPromise = result.current.start();
+    });
+
+    unmount();
+
+    const res = await act(async () => {
+      resolveDeposit({ id: "tx-late", url: "https://anchor.example.com/late" });
+      return await startPromise;
+    });
+
+    expect(res).toBeUndefined();
+    expect(ramp.watch).not.toHaveBeenCalled();
+  });
 });

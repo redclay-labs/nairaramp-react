@@ -18,4 +18,8 @@ export {
   type FailureStatusMapping,
   TIMELINE_STEPS,
   STATUS_MAP,
+  YORUBA_LABELS,
+  HAUSA_LABELS,
+  IGBO_LABELS,
+  PIDGIN_LABELS,
 } from "./StatusTimeline";

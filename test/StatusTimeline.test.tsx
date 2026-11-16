@@ -4,6 +4,10 @@ import {
   StatusTimeline,
   STATUS_MAP,
   TIMELINE_STEPS,
+  YORUBA_LABELS,
+  HAUSA_LABELS,
+  IGBO_LABELS,
+  PIDGIN_LABELS,
   type TimelineStep,
 } from "../src/StatusTimeline";
 import type { TransactionStatus } from "@nairaramp/core";
@@ -154,6 +158,22 @@ describe("StatusTimeline Component", () => {
       screen.getByText("Stellar transaction submitted to network")
     ).toBeTruthy();
     expect(screen.getByText("Sending on Stellar")).toBeTruthy();
+  });
+
+  it("exports Nigerian language label sets covering all 6 timeline steps", () => {
+    const labelSets = [YORUBA_LABELS, HAUSA_LABELS, IGBO_LABELS, PIDGIN_LABELS];
+
+    for (const labelSet of labelSets) {
+      expect(Object.keys(labelSet)).toEqual([...TIMELINE_STEPS]);
+      const { unmount } = render(
+        <StatusTimeline status="pending_anchor" labels={labelSet} />
+      );
+      for (const step of TIMELINE_STEPS) {
+        expect(screen.getByText(labelSet[step])).toBeTruthy();
+      }
+      unmount();
+      cleanup();
+    }
   });
 
   it("exports all 6 timeline steps in correct order", () => {

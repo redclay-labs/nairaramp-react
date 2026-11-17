@@ -25,10 +25,11 @@ Status: early development, testnet only.
 
 ## Features
 
-- **Drop-in UI Component**: `<PayWithNaira />` handles button state, popup launching, fallback links, and completion/error callbacks.
+- **Drop-in UI Components**: `<PayWithNaira />` (on-ramp) and `<CashOutToNaira />` (off-ramp) handle button state, popup launching, fallback links, and completion/error callbacks.
 - **Synchronous Popup Launcher**: Pre-opens the anchor window synchronously on user click before awaiting network requests, preventing browser popup blockers from suppressing the anchor interaction.
-- **Resilient Fallback**: Renders an inline fallback link (`Continue to the anchor`) if the browser forcefully blocks popups.
-- **Phased Lifecycle Hook**: `usePayWithNaira()` manages the complete state machine (`idle` → `starting` → `awaiting_user` → `processing` → `completed` / `failed`) for bespoke checkout interfaces.
+- **Resilient Fallback & URL Validation**: Validates anchor URLs (`http:`/`https:`) and renders an inline fallback link (`Continue to the anchor`) if the browser blocks popups.
+- **Phased Lifecycle & Quote Hooks**: `usePayWithNaira()`, `useCashOutToNaira()`, and `useRampQuote()` manage deposit/withdrawal state machines and debounced/pollable SEP-38 rate estimation.
+- **Themeable & Customizable**: Supports `theme` (`"light" | "dark" | "system"`), `className`, and `style` overrides, plus pre-built Nigerian language label sets (`YORUBA_LABELS`, `HAUSA_LABELS`, `IGBO_LABELS`, `PIDGIN_LABELS`).
 - **Visual Status Tracking**: `<StatusTimeline />` visually represents all 6 transaction milestones with 100% coverage across all 15 Stellar SEP-24 transaction statuses.
 - **Full Accessibility (a11y)**: Semantic `<ol>` lists, `aria-current="step"`, live screen-reader status announcements via `aria-live="polite"`, visible focus outlines, and responsive design down to 360 px viewports.
 - **Native Next.js Support**: Built-in `"use client";` directive enables direct import in Next.js Server Component pages without manual wrappers.
@@ -251,6 +252,9 @@ pnpm typecheck
 
 # Run unit and component test suites (Vitest + jsdom + RTL)
 pnpm test
+
+# Run tests with v8 coverage report
+pnpm test:coverage
 ```
 
 ---
@@ -258,6 +262,7 @@ pnpm test
 ## Documentation
 
 - [API Reference](docs/API.md) - Complete contract, hook lifecycle phases, component props, and accessibility details.
+- [Vite Integration Guide](docs/VITE_GUIDE.md) - Setup and example for Vite + React SPAs.
 - [Contributing Guide](CONTRIBUTING.md) - Development setup, Stellar Wave participation, and testing rules.
 - [Security Policy](SECURITY.md) - Vulnerability disclosure process.
 - [License](LICENSE) - Apache License 2.0.

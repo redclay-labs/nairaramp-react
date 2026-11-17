@@ -2,6 +2,8 @@
 
 This document tracks candidate issues identified from gaps in `@nairaramp/react` for the Stellar Wave program on Drips.
 
+> **Status Note:** All 9 initial seed issues below have been implemented across PRs #14–#21 and `docs-align-and-vite-guide`. They are retained here as a historical record of resolved work.
+
 ---
 
 ## Issue Summary

@@ -12,11 +12,19 @@ Exported from `@nairaramp/react`:
 - `VERSION`
 - `usePayWithNaira`
 - `PayWithNaira`
+- `useCashOutToNaira`
+- `CashOutToNaira`
+- `useRampQuote`
 - `StatusTimeline`
 - Supporting TypeScript types and constants:
   - `UsePayWithNairaOptions`, `UsePayWithNairaResult`, `PayWithNairaPhase`
   - `PayWithNairaProps`
+  - `UseCashOutToNairaOptions`, `UseCashOutToNairaResult`, `CashOutToNairaPhase`
+  - `CashOutToNairaProps`
+  - `UseRampQuoteOptions`, `UseRampQuoteResult`
   - `StatusTimelineProps`, `TimelineStep`, `StatusMapping`, `StepStatusMapping`, `FailureStatusMapping`, `TIMELINE_STEPS`, `STATUS_MAP`
+  - `YORUBA_LABELS`, `HAUSA_LABELS`, `IGBO_LABELS`, `PIDGIN_LABELS`
+  - `ThemeMode`
 
 ---
 
@@ -155,6 +163,9 @@ interface PayWithNairaProps {
   onComplete?: () => void;
   onError?: (error: NairaRampError) => void;
   label?: string;
+  theme?: ThemeMode;
+  className?: string;
+  style?: CSSProperties;
 }
 ```
 
@@ -164,6 +175,9 @@ interface PayWithNairaProps {
 - `onComplete` *(optional)*: Callback invoked exactly once when the transaction completes.
 - `onError` *(optional)*: Callback invoked exactly once when the transaction fails.
 - `label` *(optional)*: Button label in idle state (defaults to `"Pay with Naira"`).
+- `theme` *(optional)*: `"light" | "dark" | "system"` (defaults to `"system"`).
+- `className` *(optional)*: CSS class applied to the root container `<div>`.
+- `style` *(optional)*: Inline `CSSProperties` merged onto the root container `<div>`.
 
 ### Behavior per Phase
 
@@ -211,15 +225,21 @@ Visual progress timeline component displaying the 6 sequential steps of an on-ch
 
 ```typescript
 interface StatusTimelineProps {
-  status: TransactionStatus | undefined;
+  status: TransactionStatus | string | undefined;
   message?: string;
   labels?: Partial<Record<TimelineStep, string>>;
+  theme?: ThemeMode;
+  className?: string;
+  style?: CSSProperties;
 }
 ```
 
-- `status` *(required)*: Current transaction status from `@nairaramp/core` or `undefined` (defaults to `"Started"` step active).
+- `status` *(required)*: Current transaction status from `@nairaramp/core`, a string (unrecognized values safely fall back to an `"Unknown status"` alert), or `undefined` (defaults to `"Started"` step active).
 - `message` *(optional)*: Human-readable status or error message from the anchor.
-- `labels` *(optional)*: Custom label map for translating timeline steps.
+- `labels` *(optional)*: Custom label map for translating timeline steps (pre-built dictionaries exported: `YORUBA_LABELS`, `HAUSA_LABELS`, `IGBO_LABELS`, `PIDGIN_LABELS`).
+- `theme` *(optional)*: `"light" | "dark" | "system"` (defaults to `"system"`).
+- `className` *(optional)*: CSS class applied to the root container `<div>`.
+- `style` *(optional)*: Inline `CSSProperties` merged onto the root container `<div>`.
 
 ### Ordered Steps (`TIMELINE_STEPS`)
 
@@ -298,5 +318,62 @@ function PaymentStatus({ status }: { status: TransactionStatus }) {
       }}
     />
   );
+}
+```
+
+---
+
+## 5. `useCashOutToNaira`
+
+React hook that manages the end-to-end lifecycle of a Cash Out to Naira off-ramp withdrawal: calling `ramp.withdraw`, tracking the interactive URL, watching status updates, and automatically invoking `ramp.completeWithdrawal(id)` when the status reaches `"pending_user_transfer_start"`.
+
+```typescript
+function useCashOutToNaira(options: UseCashOutToNairaOptions): UseCashOutToNairaResult;
+```
+
+- **Phases (`CashOutToNairaPhase`)**: `"idle" | "starting" | "awaiting_user" | "completing" | "processing" | "completed" | "failed"`.
+- **Return**: `{ start, phase, status, transactionId, url, txHash, error, reset }`.
+
+---
+
+## 6. `CashOutToNaira`
+
+Drop-in off-ramp withdrawal button component mirroring `PayWithNaira` for SEP-24 withdrawals (`ramp.withdraw` + `ramp.completeWithdrawal`).
+
+```typescript
+interface CashOutToNairaProps {
+  ramp: Ramp;
+  assetCode: string;
+  amount?: string;
+  onComplete?: (txHash?: string) => void;
+  onError?: (error: NairaRampError) => void;
+  label?: string;
+}
+```
+
+---
+
+## 7. `useRampQuote`
+
+React hook wrapping `ramp.getPrice(options)` with debouncing, optional polling, and stale-request protection.
+
+```typescript
+interface UseRampQuoteOptions {
+  ramp: Ramp;
+  sellAsset: string;
+  buyAsset: string;
+  sellAmount?: string;
+  buyAmount?: string;
+  context?: "sep6" | "sep24" | "sep31";
+  debounceMs?: number;
+  pollIntervalMs?: number;
+  enabled?: boolean;
+}
+
+interface UseRampQuoteResult {
+  quote: Quote | undefined;
+  loading: boolean;
+  error: NairaRampError | undefined;
+  refresh: () => Promise<void>;
 }
 ```

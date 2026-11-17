@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **`useCashOutToNaira` & `CashOutToNaira`**: Off-ramp withdrawal hook and drop-in component integrating `ramp.withdraw`, `ramp.watch`, and automatic `ramp.completeWithdrawal`.
+- **`useRampQuote`**: Debounced, pollable, race-safe hook wrapping `ramp.getPrice` for pre-transaction rate estimation.
+- **Theming & Customization**: Added `theme?: "light" | "dark" | "system"`, `className`, and `style` props to `PayWithNaira` and `StatusTimeline`.
+- **Nigerian Language Dictionaries**: Exported `YORUBA_LABELS`, `HAUSA_LABELS`, `IGBO_LABELS`, and `PIDGIN_LABELS` for `StatusTimeline`.
+- **SSR & Accessibility Tests**: Added Node-environment `renderToString` SSR tests (`test/ssr.test.tsx`) and keyboard/ARIA accessibility tests (`test/a11y.test.tsx`).
+- **Vite Integration Guide**: Added `docs/VITE_GUIDE.md`.
+- **CI Enhancements**: Added `test:coverage`, `npm pack --dry-run`, and `pnpm audit --prod` checks.
+
+### Fixed & Security
+- Populated `NairaRampError` and stopped active watchers on terminal failure statuses in `usePayWithNaira`.
+- Guarded `StatusTimeline` against unrecognized runtime status strings and widened `status` prop type to `TransactionStatus | string | undefined`.
+- Added `http:`/`https:` URL protocol validation in `PayWithNaira` and `CashOutToNaira` before navigating popups or rendering fallback links.
+
+---
+
 ## [0.1.0] - 2026-11-08
 
 ### Added

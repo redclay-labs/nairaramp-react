@@ -430,6 +430,57 @@ describe("PayWithNaira Component", () => {
     expect(mockPopup.close).toHaveBeenCalledTimes(1);
   });
 
+  it("renders fallback link when window.open throws an exception", async () => {
+    vi.spyOn(window, "open").mockImplementation(() => {
+      throw new Error("Sandbox blocked popup");
+    });
+    const { ramp } = createFakeRamp();
+
+    render(<PayWithNaira ramp={ramp} assetCode="USDC" />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Pay with Naira" }));
+    });
+
+    const fallbackLink = screen.getByRole("link", { name: "Continue to the anchor" });
+    expect(fallbackLink.getAttribute("href")).toBe(
+      "https://anchor.example.com/sep24/interactive?id=tx-123"
+    );
+
+    // Exercise focus/blur outline handlers on fallback link
+    fireEvent.focus(fallbackLink);
+    expect(fallbackLink.style.outline).toContain("2px solid");
+    fireEvent.blur(fallbackLink);
+    expect(fallbackLink.style.outline).toContain("transparent");
+  });
+
+  it("toggles visible focus outlines on primary and retry buttons", async () => {
+    const { ramp, getHandlers } = createFakeRamp();
+    vi.spyOn(window, "open").mockReturnValue(null);
+
+    render(<PayWithNaira ramp={ramp} assetCode="USDC" />);
+
+    const primaryBtn = screen.getByRole("button", { name: "Pay with Naira" });
+    fireEvent.focus(primaryBtn);
+    expect(primaryBtn.style.outline).toContain("3px solid");
+    fireEvent.blur(primaryBtn);
+    expect(primaryBtn.style.outline).toContain("transparent");
+
+    await act(async () => {
+      fireEvent.click(primaryBtn);
+    });
+
+    await act(async () => {
+      getHandlers()?.onError?.(new NairaRampError("TRANSACTION_FAILED", "Failed"));
+    });
+
+    const retryBtn = screen.getByRole("button", { name: "Try again" });
+    fireEvent.focus(retryBtn);
+    expect(retryBtn.style.outline).toContain("2px solid");
+    fireEvent.blur(retryBtn);
+    expect(retryBtn.style.outline).toContain("transparent");
+  });
+
   it("has status text inside an aria-live region and adheres to 100% width and 420px max-width", () => {
     const { ramp } = createFakeRamp();
 

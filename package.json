@@ -27,7 +27,8 @@
     "build": "tsup",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "peerDependencies": {
     "@nairaramp/core": "^0.1.0",

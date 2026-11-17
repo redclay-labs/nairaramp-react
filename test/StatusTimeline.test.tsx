@@ -176,6 +176,23 @@ describe("StatusTimeline Component", () => {
     }
   });
 
+  it("applies light and dark theme styles across step and failure states", () => {
+    const { container, rerender } = render(
+      <StatusTimeline status="pending_anchor" theme="dark" />
+    );
+
+    const darkRoot = container.firstChild as HTMLElement;
+    expect(darkRoot.style.color).toBe("rgb(249, 250, 251)");
+
+    rerender(<StatusTimeline status="error" theme="dark" message="Failed" />);
+    const darkAlert = container.firstChild as HTMLElement;
+    expect(darkAlert.style.backgroundColor).toBe("rgb(69, 10, 10)");
+
+    rerender(<StatusTimeline status="error" theme="light" message="Failed" />);
+    const lightAlert = container.firstChild as HTMLElement;
+    expect(lightAlert.style.backgroundColor).toBe("rgb(254, 242, 242)");
+  });
+
   it("applies custom className and style overrides in both step and failure views", () => {
     const { container, rerender } = render(
       <StatusTimeline

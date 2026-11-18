@@ -179,5 +179,62 @@ describe("CashOutToNaira Component", () => {
 
     expect(screen.getByRole("button", { name: "Cash out to Naira" })).toBeTruthy();
   });
+
+  it("supports theme, className, and style props and closes popup on unmount", async () => {
+    const { ramp } = createFakeRamp();
+
+    const { container, unmount } = render(
+      <CashOutToNaira
+        ramp={ramp}
+        assetCode="USDC"
+        theme="dark"
+        className="custom-cashout"
+        style={{ marginTop: "24px" }}
+      />
+    );
+
+    const root = container.firstChild as HTMLElement;
+    expect(root.className).toBe("custom-cashout");
+    expect(root.style.marginTop).toBe("24px");
+    expect(root.style.color).toBe("rgb(249, 250, 251)");
+
+    const btn = screen.getByRole("button", { name: "Cash out to Naira" });
+    fireEvent.focus(btn);
+    expect(btn.style.outline).toContain("3px solid");
+    fireEvent.blur(btn);
+
+    await act(async () => {
+      fireEvent.click(btn);
+    });
+
+    expect(mockPopup.close).not.toHaveBeenCalled();
+    unmount();
+    expect(mockPopup.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies focus outline to fallback link and retry button", async () => {
+    vi.spyOn(window, "open").mockReturnValue(null);
+    const { ramp, getHandlers } = createFakeRamp();
+
+    render(<CashOutToNaira ramp={ramp} assetCode="USDC" theme="light" />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Cash out to Naira" }));
+    });
+
+    const link = screen.getByRole("link", { name: "Continue to the anchor" });
+    fireEvent.focus(link);
+    expect(link.style.outline).toContain("2px solid");
+    fireEvent.blur(link);
+
+    await act(async () => {
+      getHandlers()!.onError!(new NairaRampError("TRANSACTION_FAILED", "Failed"));
+    });
+
+    const retryBtn = screen.getByRole("button", { name: "Try again" });
+    fireEvent.focus(retryBtn);
+    expect(retryBtn.style.outline).toContain("2px solid");
+    fireEvent.blur(retryBtn);
+  });
 });
 

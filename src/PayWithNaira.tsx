@@ -14,6 +14,16 @@ import {
 import { usePayWithNaira } from "./usePayWithNaira";
 import { useResolvedTheme, type ThemeMode } from "./theme";
 import { isSafeHttpUrl } from "./utils";
+import {
+  useAnchorPopup,
+  rampContainerStyle,
+  rampPrimaryButtonStyle,
+  rampDisabledButtonStyle,
+  rampRetryButtonStyle,
+  rampStatusTextStyle,
+  rampErrorTextStyle,
+  rampLinkStyle,
+} from "./useAnchorPopup";
 
 export interface PayWithNairaProps {
   ramp: Ramp;
@@ -26,81 +36,6 @@ export interface PayWithNairaProps {
   className?: string;
   style?: CSSProperties;
 }
-
-const containerStyle: CSSProperties = {
-  width: "100%",
-  maxWidth: "420px",
-  boxSizing: "border-box",
-  fontFamily:
-    "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  fontSize: "16px",
-  lineHeight: 1.5,
-  color: "#111827",
-  textAlign: "center",
-};
-
-const baseButtonStyle: CSSProperties = {
-  width: "100%",
-  boxSizing: "border-box",
-  padding: "12px 16px",
-  fontSize: "16px",
-  fontWeight: 600,
-  borderRadius: "8px",
-  border: "1px solid transparent",
-  cursor: "pointer",
-  textAlign: "center",
-  display: "inline-block",
-  transition: "outline 0.15s ease",
-};
-
-const primaryButtonStyle: CSSProperties = {
-  ...baseButtonStyle,
-  color: "#ffffff",
-  backgroundColor: "#059669",
-};
-
-const disabledButtonStyle: CSSProperties = {
-  ...baseButtonStyle,
-  color: "#ffffff",
-  backgroundColor: "#9ca3af",
-  cursor: "not-allowed",
-  opacity: 0.8,
-};
-
-const retryButtonStyle: CSSProperties = {
-  ...baseButtonStyle,
-  marginTop: "12px",
-  padding: "10px 16px",
-  fontSize: "15px",
-  color: "#1f2937",
-  backgroundColor: "#f3f4f6",
-  border: "1px solid #d1d5db",
-};
-
-const statusTextStyle: CSSProperties = {
-  margin: "8px 0",
-  fontSize: "16px",
-  fontWeight: 500,
-  color: "#1f2937",
-};
-
-const errorTextStyle: CSSProperties = {
-  margin: "8px 0",
-  fontSize: "15px",
-  fontWeight: 500,
-  color: "#b91c1c",
-  wordBreak: "break-word",
-};
-
-const linkStyle: CSSProperties = {
-  display: "inline-block",
-  fontSize: "15px",
-  fontWeight: 600,
-  color: "#2563eb",
-  textDecoration: "underline",
-  wordBreak: "break-all",
-  cursor: "pointer",
-};
 
 export function PayWithNaira({
   ramp,
@@ -118,13 +53,18 @@ export function PayWithNaira({
     ramp,
     assetCode,
   });
+  const {
+    popupBlocked,
+    openPopup,
+    navigatePopup,
+    closePopup,
+    clearPopupBlocked,
+  } = useAnchorPopup();
 
-  const [popupBlocked, setPopupBlocked] = useState<boolean>(false);
   const [isPrimaryFocused, setIsPrimaryFocused] = useState<boolean>(false);
   const [isRetryFocused, setIsRetryFocused] = useState<boolean>(false);
   const [isLinkFocused, setIsLinkFocused] = useState<boolean>(false);
 
-  const popupRef = useRef<Window | null>(null);
   const onCompleteRef = useRef(onComplete);
   const onErrorRef = useRef(onError);
   const completedFiredRef = useRef<boolean>(false);
@@ -138,47 +78,19 @@ export function PayWithNaira({
     onErrorRef.current = onError;
   }, [onError]);
 
-  const closePopup = useCallback(() => {
-    if (popupRef.current && !popupRef.current.closed) {
-      try {
-        popupRef.current.close();
-      } catch {
-        // ignore
-      }
-      popupRef.current = null;
-    }
-  }, []);
-
   const handleClick = useCallback(async () => {
-    setPopupBlocked(false);
-    let popup: Window | null = null;
-    try {
-      popup = window.open("", "nairaramp_anchor");
-    } catch {
-      popup = null;
-    }
-    popupRef.current = popup;
-    if (!popup) {
-      setPopupBlocked(true);
-    }
-
+    const popup = openPopup();
     const result = await start(amount);
-    if (result?.url && isSafeHttpUrl(result.url)) {
-      if (popup && !popup.closed) {
-        popup.location.href = result.url;
-      }
-    } else {
-      closePopup();
-    }
-  }, [start, amount, closePopup]);
+    navigatePopup(popup, result?.url);
+  }, [openPopup, start, amount, navigatePopup]);
 
   const handleRetry = useCallback(() => {
-    setPopupBlocked(false);
+    clearPopupBlocked();
     closePopup();
     completedFiredRef.current = false;
     errorFiredRef.current = false;
     reset();
-  }, [reset, closePopup]);
+  }, [clearPopupBlocked, closePopup, reset]);
 
   useEffect(() => {
     if (phase === "completed") {
@@ -201,7 +113,7 @@ export function PayWithNaira({
   }, [phase, error, closePopup]);
 
   return (
-    <div className={className} style={{ ...containerStyle, color: tokens.text, ...style }}>
+    <div className={className} style={{ ...rampContainerStyle, color: tokens.text, ...style }}>
       {phase === "idle" && (
         <button
           type="button"
@@ -209,7 +121,7 @@ export function PayWithNaira({
           onFocus={() => setIsPrimaryFocused(true)}
           onBlur={() => setIsPrimaryFocused(false)}
           style={{
-            ...primaryButtonStyle,
+            ...rampPrimaryButtonStyle,
             color: tokens.primaryBtnText,
             backgroundColor: tokens.primaryBtnBg,
             outline: isPrimaryFocused
@@ -228,7 +140,7 @@ export function PayWithNaira({
             type="button"
             disabled
             style={{
-              ...disabledButtonStyle,
+              ...rampDisabledButtonStyle,
               color: tokens.disabledBtnText,
               backgroundColor: tokens.disabledBtnBg,
             }}
@@ -239,7 +151,7 @@ export function PayWithNaira({
 
         {phase === "awaiting_user" && (
           <div>
-            <p style={{ ...statusTextStyle, color: tokens.secondaryText }}>
+            <p style={{ ...rampStatusTextStyle, color: tokens.secondaryText }}>
               Complete the steps in the anchor window
             </p>
             {popupBlocked && url && isSafeHttpUrl(url) && (
@@ -251,7 +163,7 @@ export function PayWithNaira({
                   onFocus={() => setIsLinkFocused(true)}
                   onBlur={() => setIsLinkFocused(false)}
                   style={{
-                    ...linkStyle,
+                    ...rampLinkStyle,
                     color: tokens.linkText,
                     outline: isLinkFocused
                       ? `2px solid ${tokens.focusAccent}`
@@ -267,20 +179,20 @@ export function PayWithNaira({
         )}
 
         {phase === "processing" && (
-          <p style={{ ...statusTextStyle, color: tokens.secondaryText }}>
+          <p style={{ ...rampStatusTextStyle, color: tokens.secondaryText }}>
             Processing your payment
           </p>
         )}
 
         {phase === "completed" && (
-          <p style={{ ...statusTextStyle, color: tokens.secondaryText }}>
+          <p style={{ ...rampStatusTextStyle, color: tokens.secondaryText }}>
             Payment completed
           </p>
         )}
 
         {phase === "failed" && (
           <div>
-            <p style={{ ...errorTextStyle, color: tokens.errorText }}>
+            <p style={{ ...rampErrorTextStyle, color: tokens.errorText }}>
               {error?.message ?? "Payment failed"}
             </p>
             <button
@@ -289,7 +201,7 @@ export function PayWithNaira({
               onFocus={() => setIsRetryFocused(true)}
               onBlur={() => setIsRetryFocused(false)}
               style={{
-                ...retryButtonStyle,
+                ...rampRetryButtonStyle,
                 color: tokens.retryBtnText,
                 backgroundColor: tokens.retryBtnBg,
                 border: `1px solid ${tokens.retryBtnBorder}`,

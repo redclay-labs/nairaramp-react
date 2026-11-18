@@ -12,7 +12,18 @@ import {
   NairaRampError as NairaRampErrorClass,
 } from "@nairaramp/core";
 import { useCashOutToNaira } from "./useCashOutToNaira";
+import { useResolvedTheme, type ThemeMode } from "./theme";
 import { isSafeHttpUrl } from "./utils";
+import {
+  useAnchorPopup,
+  rampContainerStyle,
+  rampPrimaryButtonStyle,
+  rampDisabledButtonStyle,
+  rampRetryButtonStyle,
+  rampStatusTextStyle,
+  rampErrorTextStyle,
+  rampLinkStyle,
+} from "./useAnchorPopup";
 
 export interface CashOutToNairaProps {
   ramp: Ramp;
@@ -21,82 +32,10 @@ export interface CashOutToNairaProps {
   onComplete?: (txHash?: string) => void;
   onError?: (error: NairaRampError) => void;
   label?: string;
+  theme?: ThemeMode;
+  className?: string;
+  style?: CSSProperties;
 }
-
-const containerStyle: CSSProperties = {
-  width: "100%",
-  maxWidth: "420px",
-  boxSizing: "border-box",
-  fontFamily:
-    "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  fontSize: "16px",
-  lineHeight: 1.5,
-  color: "#111827",
-  textAlign: "center",
-};
-
-const baseButtonStyle: CSSProperties = {
-  width: "100%",
-  boxSizing: "border-box",
-  padding: "12px 16px",
-  fontSize: "16px",
-  fontWeight: 600,
-  borderRadius: "8px",
-  border: "1px solid transparent",
-  cursor: "pointer",
-  textAlign: "center",
-  display: "inline-block",
-  transition: "outline 0.15s ease",
-};
-
-const primaryButtonStyle: CSSProperties = {
-  ...baseButtonStyle,
-  color: "#ffffff",
-  backgroundColor: "#059669",
-};
-
-const disabledButtonStyle: CSSProperties = {
-  ...baseButtonStyle,
-  color: "#ffffff",
-  backgroundColor: "#9ca3af",
-  cursor: "not-allowed",
-  opacity: 0.8,
-};
-
-const retryButtonStyle: CSSProperties = {
-  ...baseButtonStyle,
-  marginTop: "12px",
-  padding: "10px 16px",
-  fontSize: "15px",
-  color: "#1f2937",
-  backgroundColor: "#f3f4f6",
-  border: "1px solid #d1d5db",
-};
-
-const statusTextStyle: CSSProperties = {
-  margin: "8px 0",
-  fontSize: "16px",
-  fontWeight: 500,
-  color: "#1f2937",
-};
-
-const errorTextStyle: CSSProperties = {
-  margin: "8px 0",
-  fontSize: "15px",
-  fontWeight: 500,
-  color: "#b91c1c",
-  wordBreak: "break-word",
-};
-
-const linkStyle: CSSProperties = {
-  display: "inline-block",
-  fontSize: "15px",
-  fontWeight: 600,
-  color: "#2563eb",
-  textDecoration: "underline",
-  wordBreak: "break-all",
-  cursor: "pointer",
-};
 
 export function CashOutToNaira({
   ramp,
@@ -105,18 +44,27 @@ export function CashOutToNaira({
   onComplete,
   onError,
   label = "Cash out to Naira",
+  theme = "system",
+  className,
+  style,
 }: CashOutToNairaProps): ReactElement {
+  const tokens = useResolvedTheme(theme);
   const { start, phase, error, url, txHash, reset } = useCashOutToNaira({
     ramp,
     assetCode,
   });
+  const {
+    popupBlocked,
+    openPopup,
+    navigatePopup,
+    closePopup,
+    clearPopupBlocked,
+  } = useAnchorPopup();
 
-  const [popupBlocked, setPopupBlocked] = useState<boolean>(false);
   const [isPrimaryFocused, setIsPrimaryFocused] = useState<boolean>(false);
   const [isRetryFocused, setIsRetryFocused] = useState<boolean>(false);
   const [isLinkFocused, setIsLinkFocused] = useState<boolean>(false);
 
-  const popupRef = useRef<Window | null>(null);
   const onCompleteRef = useRef(onComplete);
   const onErrorRef = useRef(onError);
   const completedFiredRef = useRef<boolean>(false);
@@ -130,47 +78,19 @@ export function CashOutToNaira({
     onErrorRef.current = onError;
   }, [onError]);
 
-  const closePopup = useCallback(() => {
-    if (popupRef.current && !popupRef.current.closed) {
-      try {
-        popupRef.current.close();
-      } catch {
-        // ignore
-      }
-      popupRef.current = null;
-    }
-  }, []);
-
   const handleClick = useCallback(async () => {
-    setPopupBlocked(false);
-    let popup: Window | null = null;
-    try {
-      popup = window.open("", "nairaramp_anchor");
-    } catch {
-      popup = null;
-    }
-    popupRef.current = popup;
-    if (!popup) {
-      setPopupBlocked(true);
-    }
-
+    const popup = openPopup();
     const result = await start(amount);
-    if (result?.url && isSafeHttpUrl(result.url)) {
-      if (popup && !popup.closed) {
-        popup.location.href = result.url;
-      }
-    } else {
-      closePopup();
-    }
-  }, [start, amount, closePopup]);
+    navigatePopup(popup, result?.url);
+  }, [openPopup, start, amount, navigatePopup]);
 
   const handleRetry = useCallback(() => {
-    setPopupBlocked(false);
+    clearPopupBlocked();
     closePopup();
     completedFiredRef.current = false;
     errorFiredRef.current = false;
     reset();
-  }, [reset, closePopup]);
+  }, [clearPopupBlocked, closePopup, reset]);
 
   useEffect(() => {
     if (phase === "completed") {
@@ -193,7 +113,7 @@ export function CashOutToNaira({
   }, [phase, error, txHash, closePopup]);
 
   return (
-    <div style={containerStyle}>
+    <div className={className} style={{ ...rampContainerStyle, color: tokens.text, ...style }}>
       {phase === "idle" && (
         <button
           type="button"
@@ -201,9 +121,11 @@ export function CashOutToNaira({
           onFocus={() => setIsPrimaryFocused(true)}
           onBlur={() => setIsPrimaryFocused(false)}
           style={{
-            ...primaryButtonStyle,
+            ...rampPrimaryButtonStyle,
+            color: tokens.primaryBtnText,
+            backgroundColor: tokens.primaryBtnBg,
             outline: isPrimaryFocused
-              ? "3px solid #047857"
+              ? `3px solid ${tokens.focusPrimary}`
               : "2px solid transparent",
             outlineOffset: "2px",
           }}
@@ -214,14 +136,22 @@ export function CashOutToNaira({
 
       <div aria-live="polite" aria-atomic="true">
         {phase === "starting" && (
-          <button type="button" disabled style={disabledButtonStyle}>
+          <button
+            type="button"
+            disabled
+            style={{
+              ...rampDisabledButtonStyle,
+              color: tokens.disabledBtnText,
+              backgroundColor: tokens.disabledBtnBg,
+            }}
+          >
             Connecting...
           </button>
         )}
 
         {phase === "awaiting_user" && (
           <div>
-            <p style={statusTextStyle}>
+            <p style={{ ...rampStatusTextStyle, color: tokens.secondaryText }}>
               Complete the steps in the anchor window
             </p>
             {popupBlocked && url && isSafeHttpUrl(url) && (
@@ -233,9 +163,10 @@ export function CashOutToNaira({
                   onFocus={() => setIsLinkFocused(true)}
                   onBlur={() => setIsLinkFocused(false)}
                   style={{
-                    ...linkStyle,
+                    ...rampLinkStyle,
+                    color: tokens.linkText,
                     outline: isLinkFocused
-                      ? "2px solid #2563eb"
+                      ? `2px solid ${tokens.focusAccent}`
                       : "2px solid transparent",
                     outlineOffset: "2px",
                   }}
@@ -248,29 +179,40 @@ export function CashOutToNaira({
         )}
 
         {phase === "completing" && (
-          <p style={statusTextStyle}>Submitting Stellar transfer...</p>
+          <p style={{ ...rampStatusTextStyle, color: tokens.secondaryText }}>
+            Submitting Stellar transfer...
+          </p>
         )}
 
         {phase === "processing" && (
-          <p style={statusTextStyle}>Processing your cash out</p>
+          <p style={{ ...rampStatusTextStyle, color: tokens.secondaryText }}>
+            Processing your cash out
+          </p>
         )}
 
         {phase === "completed" && (
-          <p style={statusTextStyle}>Cash out completed</p>
+          <p style={{ ...rampStatusTextStyle, color: tokens.secondaryText }}>
+            Cash out completed
+          </p>
         )}
 
         {phase === "failed" && (
           <div>
-            <p style={errorTextStyle}>{error?.message ?? "Cash out failed"}</p>
+            <p style={{ ...rampErrorTextStyle, color: tokens.errorText }}>
+              {error?.message ?? "Cash out failed"}
+            </p>
             <button
               type="button"
               onClick={handleRetry}
               onFocus={() => setIsRetryFocused(true)}
               onBlur={() => setIsRetryFocused(false)}
               style={{
-                ...retryButtonStyle,
+                ...rampRetryButtonStyle,
+                color: tokens.retryBtnText,
+                backgroundColor: tokens.retryBtnBg,
+                border: `1px solid ${tokens.retryBtnBorder}`,
                 outline: isRetryFocused
-                  ? "2px solid #2563eb"
+                  ? `2px solid ${tokens.focusAccent}`
                   : "2px solid transparent",
                 outlineOffset: "2px",
               }}
@@ -283,4 +225,3 @@ export function CashOutToNaira({
     </div>
   );
 }
-

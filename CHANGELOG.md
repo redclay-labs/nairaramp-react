@@ -10,15 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`NairaRampProvider` & `useNairaRamp`**: Optional React Context provider so hooks and components can consume `ramp` without prop drilling while still supporting explicit `ramp` overrides.
+- **`StatusTimeline` `failureLabels`**: Added `failureLabels?: Partial<Record<FailureStatusLabel, string>>` prop for localizing terminal failure and unknown-status labels.
+- **`CashOutToNaira` Parity**: Added `theme`, `className`, and `style` props plus unmount popup cleanup via shared `useAnchorPopup` helper.
 - **`useCashOutToNaira` & `CashOutToNaira`**: Off-ramp withdrawal hook and drop-in component integrating `ramp.withdraw`, `ramp.watch`, and automatic `ramp.completeWithdrawal`.
 - **`useRampQuote`**: Debounced, pollable, race-safe hook wrapping `ramp.getPrice` for pre-transaction rate estimation.
 - **Theming & Customization**: Added `theme?: "light" | "dark" | "system"`, `className`, and `style` props to `PayWithNaira` and `StatusTimeline`.
 - **Nigerian Language Dictionaries**: Exported `YORUBA_LABELS`, `HAUSA_LABELS`, `IGBO_LABELS`, and `PIDGIN_LABELS` for `StatusTimeline`.
 - **SSR & Accessibility Tests**: Added Node-environment `renderToString` SSR tests (`test/ssr.test.tsx`) and keyboard/ARIA accessibility tests (`test/a11y.test.tsx`).
 - **Vite Integration Guide**: Added `docs/VITE_GUIDE.md`.
-- **CI Enhancements**: Added `test:coverage`, `npm pack --dry-run`, and `pnpm audit --prod` checks.
+- **CI Enhancements**: Added `test:coverage`, `npm pack --dry-run`, and `pnpm audit --prod` checks, and enforced Vitest coverage thresholds in `vitest.config.ts`.
 
 ### Fixed & Security
+- Added attempt-generation guards (`attemptIdRef`) in `usePayWithNaira` and `useCashOutToNaira` so `reset()` cancels stale in-flight `deposit`, `withdraw`, and `completeWithdrawal` promises.
+- Cleared stale `quote` and `error` state in `useRampQuote` when `enabled` becomes `false` or amounts are cleared.
+- Deduplicated `ensureNairaRampError` and `isSafeHttpUrl` into `src/utils.ts`.
 - Populated `NairaRampError` and stopped active watchers on terminal failure statuses in `usePayWithNaira`.
 - Guarded `StatusTimeline` against unrecognized runtime status strings and widened `status` prop type to `TransactionStatus | string | undefined`.
 - Added `http:`/`https:` URL protocol validation in `PayWithNaira` and `CashOutToNaira` before navigating popups or rendering fallback links.

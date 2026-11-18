@@ -194,3 +194,19 @@
   - `pnpm test`: Ran Vitest suite with `jsdom`, 4 files and 28 tests passed (exit code 0).
   - `npm pack --dry-run`: Confirmed package contains exactly 7 clean files (exit code 0).
 - **Open issues:** None.
+
+## 2026-11-18 - Post-Review Hardening & Feature Parity (Phases 0–5)
+
+- **What was built:**
+  - **Phase 0**: Reconciled local `main` with `origin/main` (`024d910`, PRs #18–#23).
+  - **Phase 1 (`380a8cb`)**: Added attempt-generation guards (`attemptIdRef`) in `usePayWithNaira` and `useCashOutToNaira` to prevent stale async state updates after `reset()`; cleared stale `quote`/`error` in `useRampQuote` when disabled or empty; deduplicated `ensureNairaRampError` and `isSafeHttpUrl` into `src/utils.ts`.
+  - **Phase 2 (`4de9a14`)**: Extracted shared `useAnchorPopup` hook and styles into `src/useAnchorPopup.ts`; added `theme`, `className`, and `style` props and unmount popup cleanup to `CashOutToNaira`.
+  - **Phase 3 (`5d1d89a`)**: Expanded off-ramp and quote edge-case test coverage (69 tests, 98.65% statements / 100% functions / 99.54% lines) and enforced coverage thresholds in `vitest.config.ts`.
+  - **Phase 4 (`69565a3`)**: Added optional `NairaRampProvider` / `useNairaRamp` React Context (`src/NairaRampContext.tsx`) and `failureLabels` localization support in `StatusTimeline` (`src/StatusTimeline.tsx`), with unit tests in `test/NairaRampContext.test.tsx` and `test/StatusTimeline.test.tsx`.
+  - **Phase 5**: Updated `docs/API.md`, `README.md`, `CHANGELOG.md`, and `docs/PROGRESS.md`.
+- **Commands run with results:**
+  - `pnpm lint`: 0 errors (exit code 0).
+  - `pnpm typecheck`: 0 errors (exit code 0).
+  - `pnpm build`: Built ESM, CJS, and DTS bundles cleanly (exit code 0).
+  - `pnpm test:coverage`: 10 test files, 73 tests passed; 98.68% statements, 91.69% branches, 100% functions, 99.55% lines (exit code 0).
+- **Open issues:** None.

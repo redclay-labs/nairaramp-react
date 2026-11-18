@@ -10,6 +10,8 @@ This document is the contract for client applications and demo implementations (
 
 Exported from `@nairaramp/react`:
 - `VERSION`
+- `NairaRampProvider`
+- `useNairaRamp`
 - `usePayWithNaira`
 - `PayWithNaira`
 - `useCashOutToNaira`
@@ -17,12 +19,13 @@ Exported from `@nairaramp/react`:
 - `useRampQuote`
 - `StatusTimeline`
 - Supporting TypeScript types and constants:
+  - `NairaRampProviderProps`
   - `UsePayWithNairaOptions`, `UsePayWithNairaResult`, `PayWithNairaPhase`
   - `PayWithNairaProps`
   - `UseCashOutToNairaOptions`, `UseCashOutToNairaResult`, `CashOutToNairaPhase`
   - `CashOutToNairaProps`
   - `UseRampQuoteOptions`, `UseRampQuoteResult`
-  - `StatusTimelineProps`, `TimelineStep`, `StatusMapping`, `StepStatusMapping`, `FailureStatusMapping`, `TIMELINE_STEPS`, `STATUS_MAP`
+  - `StatusTimelineProps`, `TimelineStep`, `StatusMapping`, `StepStatusMapping`, `FailureStatusLabel`, `FailureStatusMapping`, `TIMELINE_STEPS`, `STATUS_MAP`
   - `YORUBA_LABELS`, `HAUSA_LABELS`, `IGBO_LABELS`, `PIDGIN_LABELS`
   - `ThemeMode`
 
@@ -228,6 +231,7 @@ interface StatusTimelineProps {
   status: TransactionStatus | string | undefined;
   message?: string;
   labels?: Partial<Record<TimelineStep, string>>;
+  failureLabels?: Partial<Record<FailureStatusLabel, string>>;
   theme?: ThemeMode;
   className?: string;
   style?: CSSProperties;
@@ -237,6 +241,7 @@ interface StatusTimelineProps {
 - `status` *(required)*: Current transaction status from `@nairaramp/core`, a string (unrecognized values safely fall back to an `"Unknown status"` alert), or `undefined` (defaults to `"Started"` step active).
 - `message` *(optional)*: Human-readable status or error message from the anchor.
 - `labels` *(optional)*: Custom label map for translating timeline steps (pre-built dictionaries exported: `YORUBA_LABELS`, `HAUSA_LABELS`, `IGBO_LABELS`, `PIDGIN_LABELS`).
+- `failureLabels` *(optional)*: Custom label map for translating terminal failure labels (`"Refunded" | "Expired" | "No market" | "Too small" | "Too large" | "Error" | "Unknown status"`).
 - `theme` *(optional)*: `"light" | "dark" | "system"` (defaults to `"system"`).
 - `className` *(optional)*: CSS class applied to the root container `<div>`.
 - `style` *(optional)*: Inline `CSSProperties` merged onto the root container `<div>`.
@@ -342,24 +347,30 @@ Drop-in off-ramp withdrawal button component mirroring `PayWithNaira` for SEP-24
 
 ```typescript
 interface CashOutToNairaProps {
-  ramp: Ramp;
+  ramp?: Ramp;
   assetCode: string;
   amount?: string;
   onComplete?: (txHash?: string) => void;
   onError?: (error: NairaRampError) => void;
   label?: string;
+  theme?: ThemeMode;
+  className?: string;
+  style?: CSSProperties;
 }
 ```
+
+- `ramp` *(optional when wrapped in `<NairaRampProvider>`)*: `Ramp` instance from `@nairaramp/core`.
+- `assetCode`, `amount`, `onComplete`, `onError`, `label`, `theme`, `className`, `style`: Mirrors `PayWithNairaProps`, with `onComplete` receiving the Stellar `txHash` when available.
 
 ---
 
 ## 7. `useRampQuote`
 
-React hook wrapping `ramp.getPrice(options)` with debouncing, optional polling, and stale-request protection.
+React hook wrapping `ramp.getPrice(options)` with debouncing, optional polling, and stale-request protection. Clears `quote` and `error` when `enabled` is `false` or both amounts are empty.
 
 ```typescript
 interface UseRampQuoteOptions {
-  ramp: Ramp;
+  ramp?: Ramp;
   sellAsset: string;
   buyAsset: string;
   sellAmount?: string;
@@ -376,4 +387,20 @@ interface UseRampQuoteResult {
   error: NairaRampError | undefined;
   refresh: () => Promise<void>;
 }
+```
+
+---
+
+## 8. `NairaRampProvider` & `useNairaRamp`
+
+Optional React Context provider that supplies a `Ramp` instance to descendant hooks and components (`PayWithNaira`, `CashOutToNaira`, `usePayWithNaira`, `useCashOutToNaira`, `useRampQuote`) so `ramp` does not need to be passed to every prop. An explicit `ramp` prop/option always overrides the context value.
+
+```typescript
+interface NairaRampProviderProps {
+  ramp: Ramp;
+  children: ReactNode;
+}
+
+function NairaRampProvider(props: NairaRampProviderProps): ReactElement;
+function useNairaRamp(overrideRamp?: Ramp): Ramp;
 ```

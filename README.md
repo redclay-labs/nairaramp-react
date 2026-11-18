@@ -81,7 +81,23 @@ export function Checkout() {
 
 ## Components
 
-### `PayWithNaira`
+### `PayWithNaira` & `CashOutToNaira`
+
+`<PayWithNaira />` (on-ramp) and `<CashOutToNaira />` (off-ramp) provide complete payment/withdrawal buttons, automated anchor popup launchers, fallback links for blocked popups, and live status updates. Both support `theme` (`"light" | "dark" | "system"`), `className`, and `style` props, and can read `ramp` from `<NairaRampProvider>`.
+
+```tsx
+<NairaRampProvider ramp={ramp}>
+  <CashOutToNaira
+    assetCode="USDC"
+    amount="25"
+    theme="dark"
+    onComplete={(txHash) => console.log("Cash out sent:", txHash)}
+    onError={(err) => console.error("Cash out failed:", err.message)}
+  />
+</NairaRampProvider>
+```
+
+#### Props (`PayWithNaira`)
 
 The `<PayWithNaira />` component provides a complete payment button, automated anchor popup launcher, fallback link for blocked popups, and live status updates.
 

@@ -202,5 +202,76 @@ describe("useCashOutToNaira", () => {
     unmount();
     expect(stopFn).toHaveBeenCalledTimes(2);
   });
+
+  it("ignores stale withdraw and completeWithdrawal promises after reset()", async () => {
+    let resolveWithdraw!: (val: { id: string; url: string }) => void;
+    let rejectComplete!: (err: Error) => void;
+
+    const withdrawMock = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ id: string; url: string }>((resolve) => {
+            resolveWithdraw = resolve;
+          })
+      )
+      .mockResolvedValueOnce({
+        id: "wd-second",
+        url: "https://anchor.example.com/sep24/withdraw?id=wd-second",
+      });
+
+    const completeMock = vi.fn().mockImplementation(
+      () =>
+        new Promise<{ hash: string }>((_resolve, reject) => {
+          rejectComplete = reject;
+        })
+    );
+
+    const { ramp, getHandlers } = createFakeRamp({
+      withdrawImpl: withdrawMock,
+      completeWithdrawalImpl: completeMock,
+    });
+
+    const { result } = renderHook(() =>
+      useCashOutToNaira({ ramp, assetCode: "USDC" })
+    );
+
+    // 1. Reset while withdraw() is in flight
+    let firstPromise: Promise<{ id: string; url: string } | undefined>;
+    act(() => {
+      firstPromise = result.current.start("100");
+    });
+    act(() => {
+      result.current.reset();
+    });
+    const firstRes = await act(async () => {
+      resolveWithdraw({ id: "wd-stale", url: "https://anchor.example.com/stale" });
+      return await firstPromise;
+    });
+    expect(firstRes).toBeUndefined();
+    expect(result.current.phase).toBe("idle");
+    expect(ramp.watch).not.toHaveBeenCalled();
+
+    // 2. Reset while completeWithdrawal() is in flight
+    await act(async () => {
+      await result.current.start("200");
+    });
+    act(() => {
+      getHandlers()!.onStatus!("pending_user_transfer_start", mockTransaction);
+    });
+    expect(result.current.phase).toBe("completing");
+
+    act(() => {
+      result.current.reset();
+    });
+    expect(result.current.phase).toBe("idle");
+
+    await act(async () => {
+      rejectComplete(new Error("late complete failure"));
+    });
+    expect(result.current.phase).toBe("idle");
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.txHash).toBeUndefined();
+  });
 });
 

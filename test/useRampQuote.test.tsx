@@ -214,5 +214,45 @@ describe("useRampQuote", () => {
     expect(result.current.error).toBeUndefined();
     expect(result.current.quote).toEqual(sampleQuote);
   });
+
+  it("clears stale quote and error when amount is cleared or disabled", async () => {
+    const { ramp } = createFakeRamp();
+
+    const { result, rerender } = renderHook(
+      ({ sellAmount, enabled }: { sellAmount: string; enabled: boolean }) =>
+        useRampQuote({
+          ramp,
+          sellAsset: "iso4217:NGN",
+          buyAsset: "stellar:USDC:G...",
+          sellAmount,
+          enabled,
+          debounceMs: 0,
+        }),
+      { initialProps: { sellAmount: "5000", enabled: true } }
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.quote).toEqual(sampleQuote);
+
+    // Clearing the amount must clear the stale quote
+    rerender({ sellAmount: "", enabled: true });
+    expect(result.current.quote).toBeUndefined();
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.loading).toBe(false);
+
+    // Re-populate and then disable
+    rerender({ sellAmount: "5000", enabled: true });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.quote).toEqual(sampleQuote);
+
+    rerender({ sellAmount: "5000", enabled: false });
+    expect(result.current.quote).toBeUndefined();
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.loading).toBe(false);
+  });
 });
 

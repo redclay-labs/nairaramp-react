@@ -5,8 +5,8 @@ import {
   type AnchorTransaction,
   TERMINAL_STATUSES,
   NairaRampError,
-  isNairaRampError,
 } from "@nairaramp/core";
+import { ensureNairaRampError } from "./utils";
 
 export type PayWithNairaPhase =
   | "idle"
@@ -31,14 +31,6 @@ export interface UsePayWithNairaResult {
   reset: () => void;
 }
 
-function ensureNairaRampError(err: unknown): NairaRampError {
-  if (isNairaRampError(err)) {
-    return err;
-  }
-  const message = err instanceof Error ? err.message : String(err);
-  return new NairaRampError("TRANSACTION_FAILED", message, { cause: err });
-}
-
 export function usePayWithNaira({
   ramp,
   assetCode,
@@ -52,6 +44,7 @@ export function usePayWithNaira({
   const phaseRef = useRef<PayWithNairaPhase>("idle");
   const subscriptionRef = useRef<{ stop: () => void } | undefined>(undefined);
   const isMountedRef = useRef<boolean>(true);
+  const attemptIdRef = useRef<number>(0);
 
   // Keep phaseRef in sync with state
   useEffect(() => {
@@ -66,6 +59,7 @@ export function usePayWithNaira({
   }, []);
 
   const reset = useCallback(() => {
+    attemptIdRef.current += 1;
     stopWatcher();
     phaseRef.current = "idle";
     if (isMountedRef.current) {
@@ -83,6 +77,7 @@ export function usePayWithNaira({
         return undefined;
       }
 
+      const attemptId = ++attemptIdRef.current;
       phaseRef.current = "starting";
       if (isMountedRef.current) {
         setPhase("starting");
@@ -96,16 +91,17 @@ export function usePayWithNaira({
           ...(amount !== undefined ? { amount } : {}),
         });
       } catch (err) {
+        if (!isMountedRef.current || attemptId !== attemptIdRef.current) {
+          return undefined;
+        }
         const wrapped = ensureNairaRampError(err);
         phaseRef.current = "failed";
-        if (isMountedRef.current) {
-          setError(wrapped);
-          setPhase("failed");
-        }
+        setError(wrapped);
+        setPhase("failed");
         return undefined;
       }
 
-      if (!isMountedRef.current) {
+      if (!isMountedRef.current || attemptId !== attemptIdRef.current) {
         return undefined;
       }
 
@@ -122,7 +118,7 @@ export function usePayWithNaira({
           nextStatus: TransactionStatus | string,
           transaction?: AnchorTransaction
         ) => {
-          if (!isMountedRef.current) return;
+          if (!isMountedRef.current || attemptId !== attemptIdRef.current) return;
           setStatus(nextStatus);
 
           if (nextStatus === "completed") {
@@ -151,14 +147,14 @@ export function usePayWithNaira({
           }
         },
         onComplete: () => {
-          if (!isMountedRef.current) return;
+          if (!isMountedRef.current || attemptId !== attemptIdRef.current) return;
           stopWatcher();
           setStatus("completed");
           phaseRef.current = "completed";
           setPhase("completed");
         },
         onError: (err: NairaRampError) => {
-          if (!isMountedRef.current) return;
+          if (!isMountedRef.current || attemptId !== attemptIdRef.current) return;
           stopWatcher();
           const wrapped = ensureNairaRampError(err);
           setError(wrapped);
@@ -177,6 +173,7 @@ export function usePayWithNaira({
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+      attemptIdRef.current += 1;
       stopWatcher();
     };
   }, [stopWatcher]);

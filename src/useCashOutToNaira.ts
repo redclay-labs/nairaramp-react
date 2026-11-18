@@ -48,6 +48,7 @@ export function useCashOutToNaira({
   const subscriptionRef = useRef<{ stop: () => void } | undefined>(undefined);
   const isMountedRef = useRef<boolean>(true);
   const completionStartedRef = useRef<boolean>(false);
+  const attemptIdRef = useRef<number>(0);
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -61,6 +62,7 @@ export function useCashOutToNaira({
   }, []);
 
   const reset = useCallback(() => {
+    attemptIdRef.current += 1;
     stopWatcher();
     phaseRef.current = "idle";
     completionStartedRef.current = false;
@@ -80,6 +82,7 @@ export function useCashOutToNaira({
         return undefined;
       }
 
+      const attemptId = ++attemptIdRef.current;
       completionStartedRef.current = false;
       phaseRef.current = "starting";
       if (isMountedRef.current) {
@@ -95,16 +98,17 @@ export function useCashOutToNaira({
           ...(amount !== undefined ? { amount } : {}),
         });
       } catch (err) {
+        if (!isMountedRef.current || attemptId !== attemptIdRef.current) {
+          return undefined;
+        }
         const wrapped = ensureNairaRampError(err);
         phaseRef.current = "failed";
-        if (isMountedRef.current) {
-          setError(wrapped);
-          setPhase("failed");
-        }
+        setError(wrapped);
+        setPhase("failed");
         return undefined;
       }
 
-      if (!isMountedRef.current) {
+      if (!isMountedRef.current || attemptId !== attemptIdRef.current) {
         return undefined;
       }
 
@@ -121,7 +125,7 @@ export function useCashOutToNaira({
           nextStatus: TransactionStatus | string,
           transaction?: AnchorTransaction
         ) => {
-          if (!isMountedRef.current) return;
+          if (!isMountedRef.current || attemptId !== attemptIdRef.current) return;
           setStatus(nextStatus);
 
           if (nextStatus === "completed") {
@@ -150,7 +154,7 @@ export function useCashOutToNaira({
               ramp
                 .completeWithdrawal(id)
                 .then(({ hash }) => {
-                  if (!isMountedRef.current) return;
+                  if (!isMountedRef.current || attemptId !== attemptIdRef.current) return;
                   setTxHash(hash);
                   if (phaseRef.current === "completing") {
                     phaseRef.current = "processing";
@@ -158,7 +162,7 @@ export function useCashOutToNaira({
                   }
                 })
                 .catch((err) => {
-                  if (!isMountedRef.current) return;
+                  if (!isMountedRef.current || attemptId !== attemptIdRef.current) return;
                   stopWatcher();
                   setError(ensureNairaRampError(err));
                   phaseRef.current = "failed";
@@ -177,14 +181,14 @@ export function useCashOutToNaira({
           }
         },
         onComplete: () => {
-          if (!isMountedRef.current) return;
+          if (!isMountedRef.current || attemptId !== attemptIdRef.current) return;
           stopWatcher();
           setStatus("completed");
           phaseRef.current = "completed";
           setPhase("completed");
         },
         onError: (err: NairaRampError) => {
-          if (!isMountedRef.current) return;
+          if (!isMountedRef.current || attemptId !== attemptIdRef.current) return;
           stopWatcher();
           setError(ensureNairaRampError(err));
           phaseRef.current = "failed";
@@ -202,6 +206,7 @@ export function useCashOutToNaira({
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+      attemptIdRef.current += 1;
       stopWatcher();
     };
   }, [stopWatcher]);

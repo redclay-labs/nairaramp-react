@@ -389,4 +389,64 @@ describe("usePayWithNaira", () => {
     expect(res).toBeUndefined();
     expect(ramp.watch).not.toHaveBeenCalled();
   });
+
+  it("ignores stale deposit resolution or rejection after reset()", async () => {
+    let resolveFirst!: (val: { id: string; url: string }) => void;
+    let rejectSecond!: (err: Error) => void;
+    const depositMock = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ id: string; url: string }>((resolve) => {
+            resolveFirst = resolve;
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ id: string; url: string }>((_resolve, reject) => {
+            rejectSecond = reject;
+          })
+      );
+
+    const { ramp } = createFakeRamp({ depositImpl: depositMock });
+    const { result } = renderHook(() =>
+      usePayWithNaira({ ramp, assetCode: "NGNC" })
+    );
+
+    let firstPromise: Promise<{ id: string; url: string } | undefined>;
+    act(() => {
+      firstPromise = result.current.start("1000");
+    });
+    expect(result.current.phase).toBe("starting");
+
+    act(() => {
+      result.current.reset();
+    });
+    expect(result.current.phase).toBe("idle");
+
+    const firstRes = await act(async () => {
+      resolveFirst({ id: "tx-stale", url: "https://anchor.example.com/stale" });
+      return await firstPromise;
+    });
+    expect(firstRes).toBeUndefined();
+    expect(result.current.phase).toBe("idle");
+    expect(result.current.transactionId).toBeUndefined();
+    expect(ramp.watch).not.toHaveBeenCalled();
+
+    let secondPromise: Promise<{ id: string; url: string } | undefined>;
+    act(() => {
+      secondPromise = result.current.start("2000");
+    });
+    act(() => {
+      result.current.reset();
+    });
+
+    const secondRes = await act(async () => {
+      rejectSecond(new Error("late failure"));
+      return await secondPromise;
+    });
+    expect(secondRes).toBeUndefined();
+    expect(result.current.phase).toBe("idle");
+    expect(result.current.error).toBeUndefined();
+  });
 });

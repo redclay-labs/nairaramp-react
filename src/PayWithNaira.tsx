@@ -13,6 +13,7 @@ import {
 } from "@nairaramp/core";
 import { usePayWithNaira } from "./usePayWithNaira";
 import { useResolvedTheme, type ThemeMode } from "./theme";
+import { isSafeHttpUrl } from "./utils";
 
 export interface PayWithNairaProps {
   ramp: Ramp;
@@ -100,15 +101,6 @@ const linkStyle: CSSProperties = {
   wordBreak: "break-all",
   cursor: "pointer",
 };
-
-function isSafeHttpUrl(rawUrl: string): boolean {
-  try {
-    const parsed = new URL(rawUrl);
-    return parsed.protocol === "https:" || parsed.protocol === "http:";
-  } catch {
-    return false;
-  }
-}
 
 export function PayWithNaira({
   ramp,

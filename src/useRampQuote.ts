@@ -104,6 +104,8 @@ export function useRampQuote({
   useEffect(() => {
     if (!enabled || !hasAmount) {
       requestIdRef.current++;
+      setQuote(undefined);
+      setError(undefined);
       setLoading(false);
       return;
     }

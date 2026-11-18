@@ -273,5 +273,53 @@ describe("useCashOutToNaira", () => {
     expect(result.current.error).toBeUndefined();
     expect(result.current.txHash).toBeUndefined();
   });
+
+  it("handles incomplete, pending_user, processing, onComplete, and onError watcher events", async () => {
+    const { ramp, getHandlers, stopFn } = createFakeRamp();
+    const { result } = renderHook(() =>
+      useCashOutToNaira({ ramp, assetCode: "USDC" })
+    );
+
+    await act(async () => {
+      await result.current.start("500");
+    });
+
+    act(() => {
+      getHandlers()!.onStatus!("incomplete", mockTransaction);
+    });
+    expect(result.current.phase).toBe("awaiting_user");
+
+    act(() => {
+      getHandlers()!.onStatus!("pending_user", mockTransaction);
+    });
+    expect(result.current.phase).toBe("awaiting_user");
+
+    act(() => {
+      getHandlers()!.onStatus!("pending_anchor", mockTransaction);
+    });
+    expect(result.current.phase).toBe("processing");
+
+    act(() => {
+      getHandlers()!.onComplete!(mockTransaction);
+    });
+    expect(result.current.phase).toBe("completed");
+    expect(result.current.status).toBe("completed");
+    expect(stopFn).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      result.current.reset();
+    });
+
+    await act(async () => {
+      await result.current.start("500");
+    });
+
+    act(() => {
+      getHandlers()!.onError!(new NairaRampError("ANCHOR_UNREACHABLE", "Network error"));
+    });
+    expect(result.current.phase).toBe("failed");
+    expect(result.current.error?.code).toBe("ANCHOR_UNREACHABLE");
+    expect(stopFn).toHaveBeenCalledTimes(2);
+  });
 });
 

@@ -254,5 +254,82 @@ describe("useRampQuote", () => {
     expect(result.current.error).toBeUndefined();
     expect(result.current.loading).toBe(false);
   });
+
+  it("preserves NairaRampError, ignores refresh when disabled, and drops stale rejections", async () => {
+    let rejectFirst!: (err: unknown) => void;
+    let resolveSecond!: (q: Quote) => void;
+
+    const getPriceMock = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<Quote>((_resolve, reject) => {
+            rejectFirst = reject;
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<Quote>((resolve) => {
+            resolveSecond = resolve;
+          })
+      )
+      .mockRejectedValueOnce(new NairaRampError("QUOTE_EXPIRED", "Quote expired"));
+
+    const { ramp } = createFakeRamp(getPriceMock);
+
+    // 1. Disabled refresh is a no-op
+    const { result: disabledResult } = renderHook(() =>
+      useRampQuote({
+        ramp,
+        sellAsset: "iso4217:NGN",
+        buyAsset: "stellar:USDC:G...",
+        sellAmount: "5000",
+        enabled: false,
+      })
+    );
+    await act(async () => {
+      await disabledResult.current.refresh();
+    });
+    expect(getPriceMock).not.toHaveBeenCalled();
+
+    // 2. Stale rejection does not overwrite newer quote, and NairaRampError is preserved
+    const { result, rerender } = renderHook(
+      ({ sellAmount }: { sellAmount: string }) =>
+        useRampQuote({
+          ramp,
+          sellAsset: "iso4217:NGN",
+          buyAsset: "stellar:USDC:G...",
+          sellAmount,
+          debounceMs: 0,
+        }),
+      { initialProps: { sellAmount: "1000" } }
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    rerender({ sellAmount: "2000" });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    await act(async () => {
+      resolveSecond(sampleQuote);
+    });
+    expect(result.current.quote).toEqual(sampleQuote);
+
+    await act(async () => {
+      rejectFirst(new Error("stale failure"));
+    });
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.quote).toEqual(sampleQuote);
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(result.current.error).toBeInstanceOf(NairaRampError);
+    expect(result.current.error?.code).toBe("QUOTE_EXPIRED");
+  });
 });
 

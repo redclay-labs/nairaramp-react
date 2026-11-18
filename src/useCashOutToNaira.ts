@@ -7,6 +7,7 @@ import {
   NairaRampError,
 } from "@nairaramp/core";
 import { ensureNairaRampError } from "./utils";
+import { useNairaRamp } from "./NairaRampContext";
 
 export type CashOutToNairaPhase =
   | "idle"
@@ -18,7 +19,7 @@ export type CashOutToNairaPhase =
   | "failed";
 
 export interface UseCashOutToNairaOptions {
-  ramp: Ramp;
+  ramp?: Ramp;
   assetCode: string;
 }
 
@@ -34,9 +35,10 @@ export interface UseCashOutToNairaResult {
 }
 
 export function useCashOutToNaira({
-  ramp,
+  ramp: rampOption,
   assetCode,
 }: UseCashOutToNairaOptions): UseCashOutToNairaResult {
+  const ramp = useNairaRamp(rampOption);
   const [phase, setPhase] = useState<CashOutToNairaPhase>("idle");
   const [status, setStatus] = useState<TransactionStatus | string | undefined>(undefined);
   const [transactionId, setTransactionId] = useState<string | undefined>(undefined);

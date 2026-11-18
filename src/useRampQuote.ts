@@ -6,9 +6,10 @@ import {
   NairaRampError,
   isNairaRampError,
 } from "@nairaramp/core";
+import { useNairaRamp } from "./NairaRampContext";
 
 export interface UseRampQuoteOptions {
-  ramp: Ramp;
+  ramp?: Ramp;
   sellAsset: string;
   buyAsset: string;
   sellAmount?: string;
@@ -35,7 +36,7 @@ function toQuoteError(err: unknown): NairaRampError {
 }
 
 export function useRampQuote({
-  ramp,
+  ramp: rampOption,
   sellAsset,
   buyAsset,
   sellAmount,
@@ -45,6 +46,7 @@ export function useRampQuote({
   pollIntervalMs,
   enabled = true,
 }: UseRampQuoteOptions): UseRampQuoteResult {
+  const ramp = useNairaRamp(rampOption);
   const [quote, setQuote] = useState<Quote | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<NairaRampError | undefined>(undefined);

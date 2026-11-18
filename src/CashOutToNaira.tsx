@@ -26,7 +26,7 @@ import {
 } from "./useAnchorPopup";
 
 export interface CashOutToNairaProps {
-  ramp: Ramp;
+  ramp?: Ramp;
   assetCode: string;
   amount?: string;
   onComplete?: (txHash?: string) => void;

@@ -246,4 +246,23 @@ describe("StatusTimeline Component", () => {
       "Completed",
     ]);
   });
+
+  it("supports custom failureLabels for terminal failure and unknown statuses", () => {
+    const { rerender } = render(
+      <StatusTimeline
+        status="expired"
+        failureLabels={{ Expired: "Akoko ti pari" }}
+      />
+    );
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.getByText("Akoko ti pari")).toBeTruthy();
+
+    rerender(
+      <StatusTimeline
+        status="custom_unknown"
+        failureLabels={{ "Unknown status": "Ipo aimọ" }}
+      />
+    );
+    expect(screen.getByText("Ipo aimọ")).toBeTruthy();
+  });
 });

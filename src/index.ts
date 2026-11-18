@@ -1,6 +1,11 @@
 export const VERSION = "0.1.0";
 export type { ThemeMode } from "./theme";
 export {
+  NairaRampProvider,
+  useNairaRamp,
+  type NairaRampProviderProps,
+} from "./NairaRampContext";
+export {
   usePayWithNaira,
   type UsePayWithNairaOptions,
   type UsePayWithNairaResult,
@@ -26,6 +31,7 @@ export {
   type TimelineStep,
   type StatusMapping,
   type StepStatusMapping,
+  type FailureStatusLabel,
   type FailureStatusMapping,
   TIMELINE_STEPS,
   STATUS_MAP,

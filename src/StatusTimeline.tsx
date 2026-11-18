@@ -61,9 +61,18 @@ export interface StepStatusMapping {
   label: TimelineStep;
 }
 
+export type FailureStatusLabel =
+  | "Refunded"
+  | "Expired"
+  | "No market"
+  | "Too small"
+  | "Too large"
+  | "Error"
+  | "Unknown status";
+
 export interface FailureStatusMapping {
   kind: "failure";
-  label: string;
+  label: FailureStatusLabel;
 }
 
 export type StatusMapping = StepStatusMapping | FailureStatusMapping;
@@ -144,6 +153,7 @@ export interface StatusTimelineProps {
   status: TransactionStatus | string | undefined;
   message?: string;
   labels?: Partial<Record<TimelineStep, string>>;
+  failureLabels?: Partial<Record<FailureStatusLabel, string>>;
   theme?: ThemeMode;
   className?: string;
   style?: CSSProperties;
@@ -214,6 +224,7 @@ export function StatusTimeline({
   status,
   message,
   labels,
+  failureLabels,
   theme = "system",
   className,
   style,
@@ -222,6 +233,7 @@ export function StatusTimeline({
   const mapping = resolveStatusMapping(status);
 
   if (mapping.kind === "failure") {
+    const failureText = failureLabels?.[mapping.label] ?? mapping.label;
     return (
       <div
         className={className}
@@ -235,7 +247,7 @@ export function StatusTimeline({
         role="alert"
       >
         <p style={{ ...failureTitleStyle, color: tokens.failureTitle }}>
-          {mapping.label}
+          {failureText}
         </p>
         {message && (
           <p style={{ ...messageTextStyle, color: tokens.mutedText }}>

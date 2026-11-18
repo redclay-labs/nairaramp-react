@@ -26,7 +26,7 @@ import {
 } from "./useAnchorPopup";
 
 export interface PayWithNairaProps {
-  ramp: Ramp;
+  ramp?: Ramp;
   assetCode: string;
   amount?: string;
   onComplete?: () => void;
